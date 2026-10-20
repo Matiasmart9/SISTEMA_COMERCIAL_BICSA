@@ -15,44 +15,44 @@ export async function seedSuperAdmin() {
     logger.warn('⚠️  SUPERADMIN_EMAIL o SUPERADMIN_PASSWORD no configurados, saltando seed.');
     return;
   }
-
   try {
+    // 1. Migrar/actualizar gerente comercial si aún tiene el correo viejo
+    await pool.query(`
+      UPDATE users 
+      SET email = 'luis.reyes@bicsa.com.py', full_name = 'Luis Reyes' 
+      WHERE email = 'gerente.comercial@bicsa.com.py' OR id = '00000000-0000-0000-0000-000000000004'
+    `);
+
+    // 2. Garantizar que el superadmin tenga la contraseña correcta configurada
+    const adminHash = await bcrypt.hash(password, 12);
     const existing = await pool.query(
-      'SELECT id, password_hash FROM users WHERE email = $1',
+      'SELECT id FROM users WHERE email = $1',
       [email]
     );
 
     if (existing.rows.length > 0) {
-      if (existing.rows[0].password_hash.includes('placeholder')) {
-        const hash = await bcrypt.hash(password, 12);
-        await pool.query(
-          'UPDATE users SET password_hash = $1 WHERE email = $2',
-          [hash, email]
-        );
-        logger.info(`✅ Contraseña del superadmin actualizada: ${email}`);
-      } else {
-        logger.info(`ℹ️  Superadmin ya existe: ${email}`);
-      }
+      await pool.query(
+        'UPDATE users SET password_hash = $1, is_active = true WHERE email = $2',
+        [adminHash, email]
+      );
+      logger.info(`✅ Contraseña del superadmin sincronizada: ${email}`);
     } else {
-      const hash = await bcrypt.hash(password, 12);
       await pool.query(
         `INSERT INTO users (email, password_hash, full_name, role, is_active)
          VALUES ($1, $2, $3, 'admin', true)`,
-        [email, hash, name]
+        [email, adminHash, name]
       );
       logger.info(`✅ Superadmin creado: ${email}`);
     }
 
-    // Actualizar contraseñas de usuarios demo que tengan hash placeholder
+    // 3. Garantizar que todos los usuarios del equipo tengan su contraseña activa (Bicsa123!)
     const demoPassword = process.env.DEMO_USER_PASSWORD || 'Bicsa123!';
     const demoHash = await bcrypt.hash(demoPassword, 12);
-    const demoUpdated = await pool.query(
-      `UPDATE users SET password_hash = $1 WHERE password_hash LIKE '%placeholder%' RETURNING email`,
-      [demoHash]
+    await pool.query(
+      `UPDATE users SET password_hash = $1, is_active = true WHERE email != $2`,
+      [demoHash, email]
     );
-    if (demoUpdated.rows.length > 0) {
-      logger.info(`✅ Contraseñas de usuarios demo actualizadas (${demoPassword}): ${demoUpdated.rows.map(r => r.email).join(', ')}`);
-    }
+    logger.info(`✅ Contraseñas del equipo sincronizadas: Bicsa123!`);
   } catch (err) {
     logger.error('Error al inicializar usuarios en seeder:', err);
   }
