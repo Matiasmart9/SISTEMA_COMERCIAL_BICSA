@@ -10,4 +10,4 @@ WORKDIR /app
 RUN npm install -g serve
 COPY --from=builder /app/dist ./dist
 EXPOSE 4173
-CMD ["serve", "-s", "dist", "-l", "4173"]
+CMD ["serve", "-s", "dist", "-l", "tcp://0.0.0.0:4173"]
