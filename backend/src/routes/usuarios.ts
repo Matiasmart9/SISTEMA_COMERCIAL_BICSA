@@ -7,14 +7,16 @@ import { authMiddleware, isAdmin } from '../middleware/auth';
 const router = Router();
 router.use(authMiddleware);
 
-// GET /usuarios — solo admin
+// GET /usuarios — solo admin (excluye al superadmin de la lista)
 router.get('/', isAdmin, async (_req: Request, res: Response) => {
   try {
+    const superAdminEmail = process.env.SUPERADMIN_EMAIL || 'matiasmart7@gmail.com';
     const result = await pool.query(`
       SELECT id, email, full_name, role, is_active, photo_odometer_enabled, created_at, updated_at
       FROM users
+      WHERE email != $1
       ORDER BY full_name ASC
-    `);
+    `, [superAdminEmail]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener usuarios' });

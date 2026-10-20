@@ -57,7 +57,7 @@ export default function UsuariosPage() {
     setLoading(true);
     try {
       const res = await api.get<UserItem[]>('/usuarios');
-      setUsers(res.data);
+      setUsers(res.data.filter((u) => u.email !== 'matiasmart7@gmail.com'));
     } catch (err) {
       console.error(err);
       toast.error('Error al cargar usuarios');
