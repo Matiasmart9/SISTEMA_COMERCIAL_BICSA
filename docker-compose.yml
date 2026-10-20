@@ -68,6 +68,14 @@ services:
       - frontend
     networks:
       - bicsa_net
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.routers.bicsa-comercial.entrypoints=https"
+      - "traefik.http.routers.bicsa-comercial.rule=Host(`bicsa-gestion-comercial.duckdns.org`)"
+      - "traefik.http.routers.bicsa-comercial.tls.certresolver=letsencrypt"
+      - "traefik.http.services.bicsa-comercial.loadbalancer.server.port=80"
 
 volumes:
   postgres_data:
@@ -76,3 +84,6 @@ volumes:
 networks:
   bicsa_net:
     name: bicsa_comercial_network
+  coolify:
+    name: coolify
+    external: true
