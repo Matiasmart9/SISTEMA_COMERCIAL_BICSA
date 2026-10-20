@@ -31,9 +31,9 @@ INSERT INTO users (id, email, password_hash, full_name, role, is_active, created
    TRUE,
    '00000000-0000-0000-0000-000000000001'),
   ('00000000-0000-0000-0000-000000000004',
-   'gerente.comercial@bicsa.com.py',
+   'luis.reyes@bicsa.com.py',
    '$2b$12$placeholder_gerente',
-   'Gerente Comercial',
+   'Luis Reyes',
    'gerente',
    TRUE,
    '00000000-0000-0000-0000-000000000001')
