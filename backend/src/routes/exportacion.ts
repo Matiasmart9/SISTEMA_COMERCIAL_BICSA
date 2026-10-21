@@ -68,6 +68,9 @@ router.get('/excel', async (req: Request, res: Response) => {
           TO_CHAR(wd.date, 'DD/MM/YYYY') AS fecha_formateada,
           wd.date,
           u.full_name AS ejecutivo,
+          wd.mobility_type,
+          wd.transport_total_gs,
+          wd.status,
           wd.km_start,
           wd.km_end,
           wd.km_total,
@@ -103,6 +106,8 @@ router.get('/excel', async (req: Request, res: Response) => {
           u.full_name AS ejecutivo,
           c.name AS empresa,
           v.visit_type AS tipo,
+          v.department AS departamento,
+          v.city AS ciudad,
           v.zone AS ciudad_zona,
           v.maps_url AS ubicacion,
           v.reason AS motivo,
@@ -305,29 +310,37 @@ router.get('/excel', async (req: Request, res: Response) => {
     wsJornadas.columns = [
       { header: 'Fecha', key: 'date', width: 14 },
       { header: 'Ejecutivo/a', key: 'ejecutivo', width: 25 },
+      { header: 'Estado', key: 'status', width: 14 },
+      { header: 'Movilidad', key: 'mobility_type', width: 16 },
       { header: 'Km inicial', key: 'km_start', width: 14 },
       { header: 'Km final', key: 'km_end', width: 14 },
       { header: 'Km recorridos', key: 'km_total', width: 16 },
+      { header: 'Gasto Plataforma (Gs.)', key: 'transport_total_gs', width: 22 },
       { header: 'Empresas visitadas', key: 'cantidad_empresas', width: 20 },
       { header: 'Observaciones', key: 'notes', width: 35 },
     ];
     styleHeader(wsJornadas.getRow(1));
 
     jornadas.rows.forEach((r: any) => {
+      const mobilityLabel = r.mobility_type === 'plataforma' ? 'Plataforma (Bolt/Uber)' : 'Vehículo Propio';
+      const statusLabel = r.status === 'abierta' ? 'En curso' : 'Cerrada';
       const row = wsJornadas.addRow({
         date: r.fecha_formateada,
         ejecutivo: r.ejecutivo,
-        km_start: Number(r.km_start || 0),
-        km_end: Number(r.km_end || 0),
-        km_total: Number(r.km_total || 0),
+        status: statusLabel,
+        mobility_type: mobilityLabel,
+        km_start: r.km_start !== null ? Number(r.km_start) : '',
+        km_end: r.km_end !== null ? Number(r.km_end) : '',
+        km_total: r.km_total !== null ? Number(r.km_total) : '',
+        transport_total_gs: r.transport_total_gs ? Number(r.transport_total_gs) : '',
         cantidad_empresas: Number(r.cantidad_empresas || 0),
         notes: r.notes || '-',
       });
       row.eachCell((cell, colNumber) => {
         cell.border = thinBorder;
-        if (colNumber === 1) {
+        if (colNumber === 1 || colNumber === 3 || colNumber === 4) {
           cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        } else if (colNumber >= 3 && colNumber <= 6) {
+        } else if (colNumber >= 5 && colNumber <= 9) {
           cell.alignment = { vertical: 'middle', horizontal: 'right' };
           cell.numFmt = '#,##0';
         } else {
@@ -346,13 +359,13 @@ router.get('/excel', async (req: Request, res: Response) => {
       { header: 'Ejecutivo/a', key: 'ejecutivo', width: 25 },
       { header: 'Empresa', key: 'empresa', width: 35 },
       { header: 'Tipo', key: 'tipo', width: 22 },
+      { header: 'Departamento', key: 'departamento', width: 20 },
+      { header: 'Ciudad', key: 'ciudad', width: 22 },
       { header: 'Ciudad / Zona', key: 'ciudad_zona', width: 22 },
       { header: 'Ubicación (Maps)', key: 'ubicacion', width: 30 },
       { header: 'Motivo', key: 'motivo', width: 28 },
       { header: 'Etapa', key: 'etapa', width: 28 },
       { header: 'Resultado', key: 'resultado', width: 22 },
-      { header: 'Uber ref. ida (Gs.)', key: 'uber_ref_gs', width: 20 },
-      { header: 'Bolt ref. ida (Gs.)', key: 'bolt_ref_gs', width: 20 },
       { header: 'Observaciones', key: 'observaciones', width: 40 },
     ];
     styleHeader(wsVisitas.getRow(1));
@@ -363,22 +376,19 @@ router.get('/excel', async (req: Request, res: Response) => {
         ejecutivo: r.ejecutivo,
         empresa: r.empresa,
         tipo: r.tipo,
+        departamento: r.departamento || '-',
+        ciudad: r.ciudad || '-',
         ciudad_zona: r.ciudad_zona || '-',
         ubicacion: r.ubicacion || '-',
         motivo: r.motivo,
         etapa: r.etapa,
         resultado: r.resultado,
-        uber_ref_gs: r.uber_ref_gs ? Number(r.uber_ref_gs) : '',
-        bolt_ref_gs: r.bolt_ref_gs ? Number(r.bolt_ref_gs) : '',
         observaciones: r.observaciones || '-',
       });
       row.eachCell((cell, colNumber) => {
         cell.border = thinBorder;
         if (colNumber === 1) {
           cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        } else if (colNumber === 10 || colNumber === 11) {
-          cell.alignment = { vertical: 'middle', horizontal: 'right' };
-          cell.numFmt = '#,##0';
         } else {
           cell.alignment = { vertical: 'middle', horizontal: 'left' };
         }

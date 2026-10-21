@@ -35,12 +35,12 @@ router.get('/', async (req: Request, res: Response) => {
 
     const data = await pool.query(`
       SELECT
-        v.id, v.date, v.visit_type, v.zone, v.maps_url, v.reason,
+        v.id, v.date, v.visit_type, v.department, v.city, v.zone, v.maps_url, v.reason,
         v.funnel_stage, v.result, v.uber_ref_gs, v.bolt_ref_gs, v.notes,
         v.created_at,
         u.id AS user_id, u.full_name AS user_name,
         c.id AS company_id, c.name AS company_name,
-        wd.id AS work_day_id, wd.km_total
+        wd.id AS work_day_id, wd.km_total, wd.mobility_type, wd.status AS work_day_status
       FROM visits v
       JOIN users u ON u.id = v.user_id
       JOIN companies c ON c.id = v.company_id

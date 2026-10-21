@@ -24,12 +24,18 @@ import {
   User,
   Camera,
   Car,
+  Smartphone,
   TrendingUp,
   FileCheck,
+  Fuel,
+  Receipt,
+  DollarSign,
+  Utensils,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDate, formatThousands, parseThousands, formatKm, formatGs } from '../utils/formatters';
 import { compressImageFile } from '../utils/imageCompression';
+import { DEPARTAMENTOS_PARAGUAY, getCiudadesPorDepartamento } from '../data/paraguayLocations';
 
 interface KPIs {
   total_jornadas: string | number;
@@ -58,9 +64,9 @@ const MONTH_OPTIONS = [
 interface Jornada {
   id: string;
   date: string;
-  km_start: number;
-  km_end: number;
-  km_total: number;
+  km_start: number | null;
+  km_end: number | null;
+  km_total: number | null;
   km_start_photo?: string | null;
   km_end_photo?: string | null;
   notes: string | null;
@@ -68,6 +74,13 @@ interface Jornada {
   user_name: string;
   visit_count: string | number;
   audit_count?: number;
+  status?: 'abierta' | 'cerrada';
+  mobility_type?: 'propia' | 'plataforma';
+  platform_trips?: any[];
+  transport_total_gs?: number;
+  fuel_amount_gs?: number | null;
+  extra_expenses?: any[];
+  closed_at?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -76,6 +89,8 @@ interface VisitDetail {
   id: string;
   date: string;
   visit_type: string;
+  department?: string | null;
+  city?: string | null;
   zone: string | null;
   maps_url: string | null;
   reason: string;
@@ -83,8 +98,13 @@ interface VisitDetail {
   result: string;
   uber_ref_gs: number | null;
   bolt_ref_gs: number | null;
+  transport_cost_gs?: number | null;
+  fuel_allocated_gs?: number | null;
+  other_expenses_gs?: number | null;
+  total_cost_gs?: number | null;
   notes: string | null;
   company_name: string;
+  company_id?: string;
 }
 
 interface UserOption {
@@ -102,7 +122,7 @@ interface AuditEntry {
   details: {
     changes?: Record<string, { old: any; new: any; label: string }>;
     added_visits_count?: number;
-    added_visits?: Array<{ companyName: string; funnelStage: string; result: string; zone?: string }>;
+    added_visits?: Array<{ companyName: string; funnelStage: string; result: string; zone?: string; department?: string; city?: string }>;
     audit_reason?: string;
     target_user_name?: string;
   };
@@ -111,26 +131,35 @@ interface AuditEntry {
 interface NewVisitItem {
   companyName: string;
   visitType: 'Nueva visita' | 'Prospecto en seguimiento' | 'Cliente actual';
+  department: string;
+  city: string;
   zone: string;
   mapsUrl: string;
   reason: 'Prospección' | 'Presentación de servicios' | 'Seguimiento comercial' | 'Negociación' | 'Fidelización' | 'Otro';
   funnelStage: 'Prospección' | 'Contacto con decisor' | 'Negociación' | 'Contrato' | 'Venta ganada / Suscripción';
-  result: 'Pendiente' | 'Propuesta enviada' | 'En negociación' | 'Contratado' | 'Sin interés' | 'Visita realizada';
-  uberRefGs: string;
-  boltRefGs: string;
+  result: 'Pendiente' | 'Propuesta enviada' | 'En negociación' | 'Contratado' | 'Venta perdida' | 'Sin interés' | 'Visita realizada';
+  uberRefGs?: string;
+  boltRefGs?: string;
   notes: string;
+}
+
+interface EditExtraExpenseItem {
+  id?: string;
+  concept: string;
+  amount: string;
+  companyId: string | null;
 }
 
 const EMPTY_NEW_VISIT = (): NewVisitItem => ({
   companyName: '',
   visitType: 'Nueva visita',
+  department: 'Central',
+  city: 'San Lorenzo',
   zone: '',
   mapsUrl: '',
   reason: 'Prospección',
   funnelStage: 'Prospección',
   result: 'Pendiente',
-  uberRefGs: '',
-  boltRefGs: '',
   notes: '',
 });
 
@@ -198,6 +227,9 @@ export default function HistorialPage() {
   const [editAuditReason, setEditAuditReason] = useState<string>('');
   const [editExistingVisits, setEditExistingVisits] = useState<VisitDetail[]>([]);
   const [editNewVisits, setEditNewVisits] = useState<NewVisitItem[]>([]);
+  const [editMobilityType, setEditMobilityType] = useState<'propia' | 'plataforma'>('propia');
+  const [editFuelAmount, setEditFuelAmount] = useState<string>('');
+  const [editExtraExpenses, setEditExtraExpenses] = useState<EditExtraExpenseItem[]>([]);
   const [editSubmitting, setEditSubmitting] = useState<boolean>(false);
 
   // Autocompletado dentro del modal de edición
@@ -348,9 +380,20 @@ export default function HistorialPage() {
       setEditKmStartPhoto(full.km_start_photo || '');
       setEditKmEndPhoto(full.km_end_photo || '');
       setEditNotes(full.notes || '');
-      setEditAuditReason('Ajuste de odómetro');
+      setEditAuditReason('Ajuste de datos de jornada');
       setEditExistingVisits(full.visits || []);
       setEditNewVisits([]);
+      setEditMobilityType(full.mobility_type || 'propia');
+      setEditFuelAmount(full.fuel_amount_gs ? formatThousands(full.fuel_amount_gs) : '');
+      const rawExp = Array.isArray(full.extra_expenses) ? full.extra_expenses : [];
+      setEditExtraExpenses(
+        rawExp.map((e: any) => ({
+          id: e.id || String(Math.random()).substring(2, 9),
+          concept: e.concept || '',
+          amount: e.amount ? formatThousands(e.amount) : '',
+          companyId: e.companyId || null,
+        }))
+      );
     } catch (err) {
       console.error(err);
       toast.error('Error al preparar edición de la jornada');
@@ -422,6 +465,8 @@ export default function HistorialPage() {
         return {
           ...v,
           companyName: sug.name,
+          department: sug.department || v.department,
+          city: sug.city || v.city,
           zone: sug.zone || v.zone,
           mapsUrl: sug.maps_url || v.mapsUrl,
           visitType: sug.commercial_status === 'Contratado' ? 'Cliente actual' : 'Prospecto en seguimiento',
@@ -439,35 +484,48 @@ export default function HistorialPage() {
     const kmStartNum = parseThousands(editKmStart);
     const kmEndNum = parseThousands(editKmEnd);
 
-    if (kmEndNum < kmStartNum) {
+    if (editMobilityType === 'propia' && kmEndNum > 0 && kmEndNum < kmStartNum) {
       toast.error('El kilometraje final no puede ser menor al inicial');
       return;
     }
 
-    const auditReasonVal = editAuditReason.trim() || 'Ajuste de odómetro / corrección de kilometraje';
+    const fuelNum = editMobilityType === 'propia' ? parseThousands(editFuelAmount) : 0;
+    const cleanExp = editExtraExpenses
+      .filter((exp) => parseThousands(exp.amount) > 0)
+      .map((exp) => ({
+        id: exp.id,
+        concept: exp.concept.trim() || 'Gasto extra',
+        amount: parseThousands(exp.amount),
+        companyId: exp.companyId || null,
+      }));
+
+    const auditReasonVal = editAuditReason.trim() || 'Ajuste de datos de jornada comercial';
 
     setEditSubmitting(true);
     try {
       const payload = {
         date: editDate,
-        kmStart: kmStartNum,
-        kmEnd: kmEndNum,
+        mobilityType: editMobilityType,
+        kmStart: editMobilityType === 'propia' ? kmStartNum : 0,
+        kmEnd: editMobilityType === 'propia' ? kmEndNum : 0,
         kmStartPhoto: editKmStartPhoto || undefined,
         kmEndPhoto: editKmEndPhoto || undefined,
         notes: editNotes.trim() || undefined,
         auditReason: auditReasonVal,
+        fuelAmountGs: fuelNum,
+        extraExpenses: cleanExp,
         newVisits: editNewVisits
           .filter((v) => v.companyName.trim())
           .map((v) => ({
             companyName: v.companyName.trim(),
             visitType: v.visitType,
-            zone: v.zone.trim() || undefined,
+            department: v.department || 'Central',
+            city: v.city || 'San Lorenzo',
+            zone: v.zone.trim() || `${v.city || 'San Lorenzo'}, ${v.department || 'Central'}`,
             mapsUrl: v.mapsUrl.trim() || undefined,
             reason: v.reason,
             funnelStage: v.funnelStage,
             result: v.result,
-            uberRefGs: v.uberRefGs ? parseThousands(v.uberRefGs) : undefined,
-            boltRefGs: v.boltRefGs ? parseThousands(v.boltRefGs) : undefined,
             notes: v.notes.trim() || undefined,
           })),
       };
@@ -503,6 +561,7 @@ export default function HistorialPage() {
       case 'Contratado': return 'pill-green';
       case 'Propuesta enviada':
       case 'En negociación': return 'pill-orange';
+      case 'Venta perdida':
       case 'Sin interés': return 'pill-red';
       case 'Visita realizada': return 'pill-blue';
       default: return 'pill-gray';
@@ -735,7 +794,7 @@ export default function HistorialPage() {
                   <option value="Propuesta enviada">Propuesta enviada</option>
                   <option value="En negociación">En negociación</option>
                   <option value="Contratado">Contratado</option>
-                  <option value="Sin interés">Sin interés</option>
+                  <option value="Venta perdida">Venta perdida</option>
                   <option value="Visita realizada">Visita realizada</option>
                 </select>
               </div>
@@ -933,10 +992,35 @@ export default function HistorialPage() {
                             Editada ({j.audit_count})
                           </span>
                         )}
+
+                        {j.status === 'abierta' && (
+                          <span
+                            className="sidebar-pending-badge"
+                            style={{ fontSize: '0.72rem', padding: '2px 8px', fontWeight: 800 }}
+                          >
+                            <span className="pulse-dot" />
+                            En curso
+                          </span>
+                        )}
                       </div>
 
                       {/* Botones de acción directos */}
                       <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                        {j.status === 'abierta' && j.user_id === user?.id && (
+                          <a
+                            href="/nueva-jornada"
+                            onClick={(e) => e.stopPropagation()}
+                            className="btn btn-primary btn-sm"
+                            style={{
+                              background: 'linear-gradient(135deg, #EA4800 0%, #C2410C 100%)',
+                              fontWeight: 800,
+                              fontSize: '0.78rem',
+                            }}
+                          >
+                            <span>Continuar / Cerrar</span>
+                          </a>
+                        )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -982,43 +1066,65 @@ export default function HistorialPage() {
 
                     {/* Fila inferior: Métricas detalladas (Km, Odómetro, Empresas, Fotos, Notas) */}
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                      {/* Km Recorridos */}
-                      <div
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 12px',
-                          borderRadius: 8,
-                          background: '#FFF7ED',
-                          border: '1px solid #FFEDD5',
-                          color: '#EA580C',
-                          fontWeight: 800,
-                          fontSize: '0.92rem',
-                        }}
-                      >
-                        <Car size={15} />
-                        <span>{formatKm(j.km_total)}</span>
-                      </div>
+                      {j.mobility_type === 'plataforma' ? (
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 12px',
+                            borderRadius: 8,
+                            background: '#F0FDF4',
+                            border: '1px solid #BBF7D0',
+                            color: '#15803D',
+                            fontWeight: 800,
+                            fontSize: '0.92rem',
+                          }}
+                        >
+                          <Smartphone size={15} />
+                          <span>{formatGs(j.transport_total_gs || 0)} (Plataforma)</span>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Km Recorridos */}
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '6px 12px',
+                              borderRadius: 8,
+                              background: '#FFF7ED',
+                              border: '1px solid #FFEDD5',
+                              color: '#EA580C',
+                              fontWeight: 800,
+                              fontSize: '0.92rem',
+                            }}
+                          >
+                            <Car size={15} />
+                            <span>{j.km_total !== null ? formatKm(j.km_total) : 'En curso'}</span>
+                          </div>
 
-                      {/* Odómetro Inicial -> Final */}
-                      <div
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '6px 12px',
-                          borderRadius: 8,
-                          background: '#F9FAFB',
-                          border: '1px solid #E5E7EB',
-                          fontSize: '0.84rem',
-                          color: '#4B5563',
-                        }}
-                      >
-                        <span>Inicio: <strong>{formatThousands(j.km_start)} km</strong></span>
-                        <span>→</span>
-                        <span>Final: <strong>{formatThousands(j.km_end)} km</strong></span>
-                      </div>
+                          {/* Odómetro Inicial -> Final */}
+                          <div
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '6px 12px',
+                              borderRadius: 8,
+                              background: '#F9FAFB',
+                              border: '1px solid #E5E7EB',
+                              fontSize: '0.84rem',
+                              color: '#4B5563',
+                            }}
+                          >
+                            <span>Inicio: <strong>{j.km_start !== null ? formatThousands(j.km_start) : '—'} km</strong></span>
+                            <span>→</span>
+                            <span>Final: <strong>{j.km_end !== null ? formatThousands(j.km_end) : '—'} km</strong></span>
+                          </div>
+                        </>
+                      )}
 
                       {/* Empresas / Visitas */}
                       <div
@@ -1039,6 +1145,51 @@ export default function HistorialPage() {
                           {j.visit_count} {Number(j.visit_count) === 1 ? 'empresa' : 'empresas'}
                         </span>
                       </div>
+
+                      {/* Combustible si aplica */}
+                      {j.mobility_type === 'propia' && Number(j.fuel_amount_gs || 0) > 0 && (
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 12px',
+                            borderRadius: 8,
+                            background: '#FFF7ED',
+                            border: '1px solid #FFEDD5',
+                            fontSize: '0.84rem',
+                            color: '#C2410C',
+                            fontWeight: 700,
+                          }}
+                        >
+                          <Fuel size={14} color="#EA580C" />
+                          <span>Combustible: {formatGs(j.fuel_amount_gs)}</span>
+                        </div>
+                      )}
+
+                      {/* Gastos extras si aplica */}
+                      {Array.isArray(j.extra_expenses) && j.extra_expenses.length > 0 && (
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 12px',
+                            borderRadius: 8,
+                            background: '#FEF3C7',
+                            border: '1px solid #FDE68A',
+                            fontSize: '0.84rem',
+                            color: '#92400E',
+                            fontWeight: 700,
+                          }}
+                        >
+                          <Receipt size={14} color="#D97706" />
+                          <span>
+                            Gastos Extra ({j.extra_expenses.length}):{' '}
+                            {formatGs(j.extra_expenses.reduce((a: number, c: any) => a + Number(c.amount || 0), 0))}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Registro fotográfico */}
                       {(j.km_start_photo || j.km_end_photo) && (
@@ -1109,7 +1260,7 @@ export default function HistorialPage() {
                     {isManager && <th>Ejecutivo/a</th>}
                     <th>Empresa</th>
                     <th>Tipo</th>
-                    <th>Zona</th>
+                    <th>Ubicación (INE)</th>
                     <th>Motivo</th>
                     <th>Etapa Embudo</th>
                     <th>Resultado</th>
@@ -1127,7 +1278,12 @@ export default function HistorialPage() {
                       <td style={{ fontWeight: 700, color: 'var(--ink)' }}>{v.company_name}</td>
                       <td style={{ fontSize: '0.82rem' }}>{v.visit_type}</td>
                       <td style={{ fontSize: '0.82rem' }}>
-                        {v.zone ? (
+                        {v.city ? (
+                          <span className="flex items-center gap-1">
+                            <MapPin size={12} color="var(--primary)" />
+                            {v.city}{v.department ? `, ${v.department}` : ''}
+                          </span>
+                        ) : v.zone ? (
                           <span className="flex items-center gap-1">
                             <MapPin size={12} color="var(--primary)" />
                             {v.zone}
@@ -1278,6 +1434,117 @@ export default function HistorialPage() {
                 </div>
               </div>
             </div>
+
+            {/* Resumen Financiero y de Movilidad de la Jornada */}
+            {(() => {
+              const fuelAmount = Number(selectedJornada.fuel_amount_gs || 0);
+              const rawExp: any[] = Array.isArray(selectedJornada.extra_expenses) ? selectedJornada.extra_expenses : [];
+              const totalExp = rawExp.reduce((acc, e) => acc + (Number(e.amount || 0)), 0);
+              const totalTransfers = selectedJornada.visits?.reduce((acc: number, v: any) => acc + (Number(v.transport_cost_gs || 0)), 0) || Number(selectedJornada.transport_total_gs || 0);
+              const totalInversion = (selectedJornada.mobility_type === 'propia' ? fuelAmount : totalTransfers) + totalExp;
+
+              return (
+                <div
+                  style={{
+                    background: '#FFFBF9',
+                    border: '1.5px solid #FED7AA',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px 18px',
+                    marginBottom: 20,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary-dark)', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Fuel size={16} color="var(--primary)" />
+                      MOVILIDAD, COMBUSTIBLE Y GASTOS DE LA JORNADA
+                    </div>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#9A3412', background: '#FFEDD5', padding: '4px 12px', borderRadius: 20 }}>
+                      Inversión Total: {formatGs(totalInversion)}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                    {/* Medio de Movilidad */}
+                    <div style={{ background: '#fff', padding: '10px 14px', borderRadius: 8, border: '1px solid #FFEDD5' }}>
+                      <small className="muted" style={{ fontSize: '0.75rem', display: 'block' }}>Medio de Movilidad:</small>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                        {selectedJornada.mobility_type === 'plataforma' ? (
+                          <>
+                            <Smartphone size={16} color="#15803D" />
+                            <span>Plataforma (Bolt/Uber)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Car size={16} color="var(--primary)" />
+                            <span>Vehículo Propio</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Costo de Combustible o Traslados */}
+                    <div style={{ background: '#fff', padding: '10px 14px', borderRadius: 8, border: '1px solid #FFEDD5' }}>
+                      <small className="muted" style={{ fontSize: '0.75rem', display: 'block' }}>
+                        {selectedJornada.mobility_type === 'plataforma' ? 'Costo Traslados Plataforma:' : 'Combustible Cargado:'}
+                      </small>
+                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--primary-dark)', marginTop: 3 }}>
+                        {selectedJornada.mobility_type === 'plataforma'
+                          ? formatGs(totalTransfers)
+                          : formatGs(fuelAmount)}
+                      </div>
+                    </div>
+
+                    {/* Gastos Extras */}
+                    <div style={{ background: '#fff', padding: '10px 14px', borderRadius: 8, border: '1px solid #FFEDD5' }}>
+                      <small className="muted" style={{ fontSize: '0.75rem', display: 'block' }}>Gastos Extra en Recorrido:</small>
+                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: totalExp > 0 ? '#B45309' : 'var(--ink-muted)', marginTop: 3 }}>
+                        {formatGs(totalExp)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detalle de Gastos Extras desglosados */}
+                  {rawExp.length > 0 && (
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #FDBA74' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#9A3412', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Receipt size={14} color="#EA580C" />
+                        Desglose de Gastos Extra Obtenidos ({rawExp.length}):
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {rawExp.map((exp: any, i: number) => {
+                          const matchedCompany = selectedJornada.visits?.find((v: any) => v.company_id === exp.companyId)?.company_name;
+                          return (
+                            <div
+                              key={exp.id || i}
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                background: '#fff',
+                                padding: '6px 12px',
+                                borderRadius: 6,
+                                fontSize: '0.82rem',
+                                border: '1px solid #FED7AA',
+                              }}
+                            >
+                              <div>
+                                <strong>{exp.concept || 'Gasto extra'}</strong>
+                                <span className="muted" style={{ fontSize: '0.75rem', marginLeft: 8 }}>
+                                  {matchedCompany ? `· Vinculado a: ${matchedCompany}` : '· Distribuido entre visitas'}
+                                </span>
+                              </div>
+                              <span style={{ fontWeight: 800, color: '#EA580C' }}>
+                                {formatGs(exp.amount)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Evidencia fotográfica de odómetro en detalle */}
             {(selectedJornada.km_start_photo || selectedJornada.km_end_photo) && (
@@ -1476,11 +1743,10 @@ export default function HistorialPage() {
                     <div>
                       <span className="muted">Motivo:</span> {v.reason}
                     </div>
-                    {v.zone && (
-                      <div>
-                        <span className="muted">Zona:</span> {v.zone}
-                      </div>
-                    )}
+                    <div>
+                      <span className="muted">Ubicación (INE):</span>{' '}
+                      {v.city ? `${v.city}, ${v.department}` : (v.zone || '—')}
+                    </div>
                     {v.maps_url && (
                       <div>
                         <a
@@ -1503,6 +1769,49 @@ export default function HistorialPage() {
                       <strong>Ref. Movilidad: </strong>
                       {v.uber_ref_gs ? `Uber: ${formatGs(v.uber_ref_gs)} ` : ''}
                       {v.bolt_ref_gs ? `Bolt: ${formatGs(v.bolt_ref_gs)}` : ''}
+                    </div>
+                  )}
+
+                  {/* Desglose de inversión comercial de la visita */}
+                  {(Number(v.total_cost_gs || 0) > 0 || Number(v.fuel_allocated_gs || 0) > 0 || Number(v.transport_cost_gs || 0) > 0 || Number(v.other_expenses_gs || 0) > 0) && (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        padding: '8px 12px',
+                        background: '#FFF7ED',
+                        border: '1px solid #FFEDD5',
+                        borderRadius: 6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        fontSize: '0.8rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        {Number(v.fuel_allocated_gs || 0) > 0 && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Fuel size={13} color="#EA580C" />
+                            Combustible: <strong>{formatGs(v.fuel_allocated_gs)}</strong>
+                          </span>
+                        )}
+                        {Number(v.transport_cost_gs || 0) > 0 && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Smartphone size={13} color="#15803D" />
+                            Traslado: <strong>{formatGs(v.transport_cost_gs)}</strong>
+                          </span>
+                        )}
+                        {Number(v.other_expenses_gs || 0) > 0 && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Utensils size={13} color="#D97706" />
+                            Gasto extra: <strong>{formatGs(v.other_expenses_gs)}</strong>
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontWeight: 800, color: 'var(--primary-dark)' }}>
+                        Inversión Visita: {formatGs(v.total_cost_gs || (Number(v.fuel_allocated_gs || 0) + Number(v.transport_cost_gs || 0) + Number(v.other_expenses_gs || 0)))}
+                      </div>
                     </div>
                   )}
 
@@ -1624,94 +1933,154 @@ export default function HistorialPage() {
                   padding: '20px 24px',
                 }}
               >
-                {/* Odómetro */}
-              <div
-                style={{
-                  background: 'var(--surface-2)',
-                  border: '1.5px solid #FFD0B3',
-                  borderRadius: 'var(--radius-md)',
-                  padding: 16,
-                  marginBottom: 18,
-                }}
-              >
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--primary-dark)', marginBottom: 10, letterSpacing: '0.8px' }}>
-                  CONTROL DE ODÓMETRO Y FECHA
-                </div>
-
-                <div className="grid-3">
-                  <div className="field">
-                    <label>Fecha de la jornada *</label>
-                    <input
-                      type="date"
-                      required
-                      value={editDate}
-                      onChange={(e) => setEditDate(e.target.value)}
-                    />
+                {/* Control de Fecha, Movilidad y Combustible */}
+                <div
+                  style={{
+                    background: 'var(--surface-2)',
+                    border: '1.5px solid #FFD0B3',
+                    borderRadius: 'var(--radius-md)',
+                    padding: 16,
+                    marginBottom: 18,
+                  }}
+                >
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--primary-dark)', marginBottom: 12, letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Fuel size={15} color="var(--primary)" />
+                    CONTROL DE FECHA, MOVILIDAD Y COMBUSTIBLE
                   </div>
 
-                  <div className="field">
-                    <label>Km Inicial *</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      required
-                      value={formatThousands(editKmStart)}
-                      onChange={(e) => setEditKmStart(e.target.value.replace(/\D/g, ''))}
-                    />
-                  </div>
+                  <div className="grid-3" style={{ marginBottom: 12 }}>
+                    <div className="field">
+                      <label>Fecha de la jornada *</label>
+                      <input
+                        type="date"
+                        required
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                      />
+                    </div>
 
-                  <div className="field">
-                    <label>Km Final *</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      required
-                      className={isEditKmInvalid ? 'error' : ''}
-                      value={formatThousands(editKmEnd)}
-                      onChange={(e) => setEditKmEnd(e.target.value.replace(/\D/g, ''))}
-                    />
-                  </div>
-                </div>
+                    <div className="field">
+                      <label>Medio de Movilidad</label>
+                      <select
+                        value={editMobilityType}
+                        onChange={(e) => setEditMobilityType(e.target.value as 'propia' | 'plataforma')}
+                        style={{ fontWeight: 600 }}
+                      >
+                        <option value="propia">🚗 Vehículo Propio</option>
+                        <option value="plataforma">🚕 Plataforma (Bolt/Uber)</option>
+                      </select>
+                    </div>
 
-                {editKmStart && editKmEnd && (
-                  <div style={{ marginTop: 8 }}>
-                    {isEditKmInvalid ? (
-                      <span style={{ color: 'var(--red)', fontSize: '0.82rem', fontWeight: 700 }}>
-                        ⚠️ El Km final no puede ser menor al inicial.
-                      </span>
+                    {editMobilityType === 'propia' ? (
+                      <div className="field">
+                        <label>Costo de Combustible (Gs.)</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Ej. 150.000"
+                          value={formatThousands(editFuelAmount)}
+                          onChange={(e) => setEditFuelAmount(e.target.value.replace(/\D/g, ''))}
+                          style={{ fontWeight: 700, color: 'var(--primary-dark)' }}
+                        />
+                      </div>
                     ) : (
-                      <span style={{ color: 'var(--primary-dark)', fontSize: '0.88rem', fontWeight: 800 }}>
-                        Recorrido recalculado: {formatKm(editKmTotal)}
-                      </span>
+                      <div className="field">
+                        <label>Costo de Traslados</label>
+                        <div
+                          style={{
+                            height: 38,
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0 10px',
+                            background: '#F0FDF4',
+                            border: '1px solid #BBF7D0',
+                            borderRadius: 'var(--radius-sm)',
+                            color: '#15803D',
+                            fontSize: '0.82rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Cargado por visita
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
 
-                <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
-                  <label>Observaciones generales de la jornada</label>
-                  <input
-                    type="text"
-                    placeholder="Notas..."
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                  />
-                </div>
+                  {editMobilityType === 'propia' ? (
+                    <div style={{ marginBottom: 12, padding: '12px 14px', background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid #FED7AA' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#9A3412', marginBottom: 8, letterSpacing: '0.5px' }}>
+                        CONTROL DE ODÓMETRO (VEHÍCULO PROPIO)
+                      </div>
+                      <div className="grid-2" style={{ gap: 12 }}>
+                        <div className="field">
+                          <label>Km Inicial *</label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            required
+                            value={formatThousands(editKmStart)}
+                            onChange={(e) => setEditKmStart(e.target.value.replace(/\D/g, ''))}
+                          />
+                        </div>
 
-                <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
-                  <label style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
-                    Motivo de la corrección / justificación (auditoría)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej. Corrección de odómetro anotado con error / Anexar visita"
-                    value={editAuditReason}
-                    onChange={(e) => setEditAuditReason(e.target.value)}
-                    style={{ background: '#fff', border: '1.5px solid var(--primary-light)' }}
-                  />
-                  <span className="muted" style={{ fontSize: '0.75rem', marginTop: 3 }}>
-                    Se guardará en auditoría junto a los valores originales. Si se deja en blanco, se registrará "Ajuste de odómetro".
-                  </span>
-                </div>
+                        <div className="field">
+                          <label>Km Final *</label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            required
+                            className={isEditKmInvalid ? 'error' : ''}
+                            value={formatThousands(editKmEnd)}
+                            onChange={(e) => setEditKmEnd(e.target.value.replace(/\D/g, ''))}
+                          />
+                        </div>
+                      </div>
+
+                      {editKmStart && editKmEnd && (
+                        <div style={{ marginTop: 6 }}>
+                          {isEditKmInvalid ? (
+                            <span style={{ color: 'var(--red)', fontSize: '0.82rem', fontWeight: 700 }}>
+                              ⚠️ El Km final no puede ser menor al inicial.
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--primary-dark)', fontSize: '0.88rem', fontWeight: 800 }}>
+                              Recorrido recalculado: {formatKm(editKmTotal)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: 12, padding: '10px 14px', background: '#F0FDF4', borderRadius: 'var(--radius-sm)', border: '1px solid #BBF7D0', color: '#166534', fontSize: '0.82rem' }}>
+                      💡 En modalidad de Plataforma de Transporte no se requiere odómetro. Los costos de traslados se asocian a las visitas registradas.
+                    </div>
+                  )}
+
+                  <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
+                    <label>Observaciones generales de la jornada</label>
+                    <input
+                      type="text"
+                      placeholder="Notas..."
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="field" style={{ marginTop: 10, marginBottom: 0 }}>
+                    <label style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
+                      Motivo de la corrección / justificación (auditoría)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Corrección de combustible / odómetro / Anexar visita"
+                      value={editAuditReason}
+                      onChange={(e) => setEditAuditReason(e.target.value)}
+                      style={{ background: '#fff', border: '1.5px solid var(--primary-light)' }}
+                    />
+                    <span className="muted" style={{ fontSize: '0.75rem', marginTop: 3 }}>
+                      Se guardará en auditoría junto a los valores originales. Si se deja en blanco, se registrará "Ajuste de datos de jornada comercial".
+                    </span>
+                  </div>
 
                 {/* Fotos del Odómetro en la edición */}
                 {(user?.photoOdometerEnabled || isManager || editKmStartPhoto || editKmEndPhoto) && (
@@ -1811,6 +2180,144 @@ export default function HistorialPage() {
                         )}
                       </div>
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Gastos Extras en la edición */}
+              <div
+                style={{
+                  background: '#FFFBF9',
+                  border: '1.5px solid #FDE68A',
+                  borderRadius: 'var(--radius-md)',
+                  padding: 16,
+                  marginBottom: 18,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#92400E', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Receipt size={15} color="#D97706" />
+                      GASTOS EXTRA OBTENIDOS EN EL RECORRIDO
+                    </div>
+                    <span className="muted" style={{ fontSize: '0.75rem' }}>
+                      Sirve para registro de gastos extra en recorrido (ej. Almuerzos comerciales, café de reuniones, insumos).
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditExtraExpenses((prev) => [
+                        ...prev,
+                        { id: String(Math.random()).substring(2, 9), concept: '', amount: '', companyId: null }
+                      ]);
+                    }}
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.75rem', padding: '4px 10px', fontWeight: 700 }}
+                  >
+                    <Plus size={13} />
+                    <span>Agregar otro gasto</span>
+                  </button>
+                </div>
+
+                {editExtraExpenses.length === 0 ? (
+                  <div style={{ padding: '12px', background: '#fff', borderRadius: 6, border: '1px dashed #CBD5E1', textAlign: 'center', color: '#64748B', fontSize: '0.82rem' }}>
+                    No hay gastos extra registrados en esta jornada. Haga clic en "+ Agregar otro gasto" si desea registrar alguno.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {editExtraExpenses.map((exp, idx) => (
+                      <div
+                        key={exp.id || idx}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1.4fr 1fr 1.4fr auto',
+                          gap: 8,
+                          alignItems: 'center',
+                          background: '#fff',
+                          padding: 10,
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid #FED7AA',
+                        }}
+                      >
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Concepto (ej. Almuerzo comercial)"
+                            value={exp.concept}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setEditExtraExpenses((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, concept: val } : item))
+                              );
+                            }}
+                            style={{ height: 38, fontSize: '0.85rem' }}
+                          />
+                        </div>
+
+                        <div>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="Monto Gs."
+                            value={formatThousands(exp.amount)}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '');
+                              setEditExtraExpenses((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, amount: val } : item))
+                              );
+                            }}
+                            style={{ height: 38, fontSize: '0.85rem', fontWeight: 700 }}
+                          />
+                        </div>
+
+                        <div>
+                          <select
+                            value={exp.companyId || ''}
+                            onChange={(e) => {
+                              const val = e.target.value || null;
+                              setEditExtraExpenses((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, companyId: val } : item))
+                              );
+                            }}
+                            style={{ height: 38, fontSize: '0.82rem' }}
+                          >
+                            <option value="">Distribuir entre todas las visitas</option>
+                            {editExistingVisits.map((v) => (
+                              <option key={v.id} value={v.company_id || v.id}>
+                                Vincular a: {v.company_name}
+                              </option>
+                            ))}
+                            {editNewVisits.map((nv, ni) => (
+                              nv.companyName.trim() ? (
+                                <option key={`nv-${ni}`} value={nv.companyName}>
+                                  Vincular a: {nv.companyName} (Nueva)
+                                </option>
+                              ) : null
+                            ))}
+                          </select>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditExtraExpenses((prev) => prev.filter((_, i) => i !== idx));
+                          }}
+                          className="btn btn-danger btn-sm"
+                          style={{ height: 38, width: 38, padding: 0, display: 'grid', placeItems: 'center' }}
+                          title="Eliminar gasto"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {editExtraExpenses.length > 0 && (
+                      <div style={{ textAlign: 'right', fontSize: '0.85rem', fontWeight: 800, color: '#9A3412', marginTop: 4 }}>
+                        Total Gastos Extra: {formatGs(editExtraExpenses.reduce((sum, item) => sum + (parseThousands(item.amount) || 0), 0))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1957,12 +2464,68 @@ export default function HistorialPage() {
                       </div>
 
                       <div className="field">
-                        <label>Ciudad / Zona</label>
+                        <label>Departamento (INE) *</label>
+                        <select
+                          value={nv.department || 'Central'}
+                          onChange={(e) => {
+                            const newDept = e.target.value;
+                            const cities = getCiudadesPorDepartamento(newDept);
+                            setEditNewVisits((prev) =>
+                              prev.map((item, i) =>
+                                i === idx
+                                  ? {
+                                      ...item,
+                                      department: newDept,
+                                      city: cities[0] || '',
+                                    }
+                                  : item
+                              )
+                            );
+                          }}
+                        >
+                          {DEPARTAMENTOS_PARAGUAY.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid-2" style={{ marginTop: 8 }}>
+                      <div className="field">
+                        <label>Ciudad / Municipio (INE) *</label>
+                        <select
+                          value={nv.city || ''}
+                          onChange={(e) =>
+                            setEditNewVisits((prev) =>
+                              prev.map((item, i) =>
+                                i === idx ? { ...item, city: e.target.value } : item
+                              )
+                            )
+                          }
+                        >
+                          {getCiudadesPorDepartamento(nv.department || 'Central').map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="field">
+                        <label>Dirección / Referencia (opcional)</label>
                         <input
                           type="text"
-                          placeholder="Ej. Asunción - Villa Morra"
+                          placeholder="Ej. Barrio Villa Morra, calle..."
                           value={nv.zone}
-                          onChange={(e) => setEditNewVisits((prev) => prev.map((item, i) => i === idx ? { ...item, zone: e.target.value } : item))}
+                          onChange={(e) =>
+                            setEditNewVisits((prev) =>
+                              prev.map((item, i) =>
+                                i === idx ? { ...item, zone: e.target.value } : item
+                              )
+                            )
+                          }
                         />
                       </div>
                     </div>
@@ -2007,7 +2570,7 @@ export default function HistorialPage() {
                           <option value="Propuesta enviada">Propuesta enviada</option>
                           <option value="En negociación">En negociación</option>
                           <option value="Contratado">Contratado</option>
-                          <option value="Sin interés">Sin interés</option>
+                          <option value="Venta perdida">Venta perdida</option>
                           <option value="Visita realizada">Visita realizada</option>
                         </select>
                       </div>

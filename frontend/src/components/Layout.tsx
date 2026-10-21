@@ -1,15 +1,19 @@
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Plus,
+  Radio,
   History,
   Building2,
+  DollarSign,
   Download,
   Users,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { APP_VERSION } from '../version';
+import { api } from '../api/client';
 
 const roleLabel = {
   admin: 'Administrador',
@@ -19,6 +23,37 @@ const roleLabel = {
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const [hasActiveJornada, setHasActiveJornada] = useState<boolean>(false);
+
+  // Consultar si hay una jornada abierta / en curso para el usuario
+  const checkActiveJornada = async () => {
+    if (!user) return;
+    try {
+      const res = await api.get('/jornadas/activa');
+      setHasActiveJornada(Boolean(res.data?.activa));
+    } catch (err) {
+      // Silenciar error en background polling
+    }
+  };
+
+  useEffect(() => {
+    checkActiveJornada();
+
+    // Evento personalizado cuando se inicia o cierra una jornada
+    const handleJornadaChange = () => {
+      checkActiveJornada();
+    };
+    window.addEventListener('jornada-status-changed', handleJornadaChange);
+
+    // Polling ligero cada 25 segundos
+    const timer = setInterval(checkActiveJornada, 25000);
+
+    return () => {
+      window.removeEventListener('jornada-status-changed', handleJornadaChange);
+      clearInterval(timer);
+    };
+  }, [user, location.pathname]);
 
   if (!user) return null;
 
@@ -29,11 +64,24 @@ export default function Layout() {
     .join('')
     .toUpperCase();
 
+  const isManager = ['admin', 'gerente'].includes(user.role) || user.email === 'matiasmart7@gmail.com';
+
   const navItems = [
     { to: '/', icon: <LayoutDashboard size={18} />, label: 'Resumen', exact: true },
-    { to: '/nueva-jornada', icon: <Plus size={18} />, label: 'Nueva jornada' },
+    {
+      to: '/nueva-jornada',
+      icon: <Plus size={18} />,
+      label: hasActiveJornada ? 'Jornada activa' : 'Nueva jornada',
+      badge: hasActiveJornada ? 'En curso' : null,
+    },
+    ...(isManager
+      ? [{ to: '/jornadas-en-curso', icon: <Radio size={18} />, label: 'Jornada en Curso' }]
+      : []),
     { to: '/historial', icon: <History size={18} />, label: 'Historial' },
     { to: '/empresas', icon: <Building2 size={18} />, label: 'Empresas' },
+    ...(isManager
+      ? [{ to: '/inversion', icon: <DollarSign size={18} />, label: 'Costos Empresa' }]
+      : []),
     ...(user.role !== 'ejecutivo'
       ? [{ to: '/exportacion', icon: <Download size={18} />, label: 'Exportar' }]
       : []),
@@ -46,11 +94,12 @@ export default function Layout() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-row">
-            <div className="brand-name">BICSA</div>
-            <span className="version-badge version-badge-light" title={`Versión ${APP_VERSION}`}>
-              {APP_VERSION}
-            </span>
+          <div className="sidebar-logo-card">
+            <img
+              src="/bicsa-logo.png"
+              alt="BICSA"
+              className="sidebar-logo-img"
+            />
           </div>
           <div className="brand-subtitle">Gestión Comercial</div>
         </div>
@@ -64,7 +113,13 @@ export default function Layout() {
               className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
             >
               {item.icon}
-              <span>{item.label}</span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.badge && (
+                <span className="sidebar-pending-badge" title="Jornada en curso pendiente de cierre">
+                  <span className="pulse-dot" />
+                  {item.badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

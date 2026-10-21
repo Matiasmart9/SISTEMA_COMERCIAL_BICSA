@@ -19,11 +19,14 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDate, formatThousands, parseThousands, formatGs } from '../utils/formatters';
+import { DEPARTAMENTOS_PARAGUAY, getCiudadesPorDepartamento } from '../data/paraguayLocations';
 
 interface Company {
   id: string;
   name: string;
   commercial_status: string;
+  department?: string | null;
+  city?: string | null;
   zone?: string | null;
   maps_url?: string | null;
   notes?: string | null;
@@ -61,6 +64,8 @@ export default function EmpresaDetallePage() {
   // Modal de edición de datos de la empresa
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [editName, setEditName] = useState<string>('');
+  const [editDepartment, setEditDepartment] = useState<string>('Central');
+  const [editCity, setEditCity] = useState<string>('San Lorenzo');
   const [editZone, setEditZone] = useState<string>('');
   const [editMapsUrl, setEditMapsUrl] = useState<string>('');
   const [editNotes, setEditNotes] = useState<string>('');
@@ -98,6 +103,25 @@ export default function EmpresaDetallePage() {
       setVisits(res.data.visits || []);
       setSelectedStatus(c.commercial_status);
       setEditName(c.name || '');
+
+      let dept = c.department || '';
+      if (!dept) {
+        if (c.zone?.toLowerCase().includes('asunci') || c.city?.toLowerCase().includes('asunci')) {
+          dept = 'Asunción (Distrito Capital)';
+        } else {
+          dept = 'Central';
+        }
+      } else if (dept === 'Capital') {
+        dept = 'Asunción (Distrito Capital)';
+      }
+      setEditDepartment(dept);
+
+      const availableCities = getCiudadesPorDepartamento(dept);
+      const city = c.city && availableCities.includes(c.city)
+        ? c.city
+        : (availableCities[0] || 'San Lorenzo');
+      setEditCity(city);
+
       setEditZone(c.zone || '');
       setEditMapsUrl(c.maps_url || '');
       setEditNotes(c.notes || '');
@@ -117,6 +141,25 @@ export default function EmpresaDetallePage() {
   function openEditModal() {
     if (!company) return;
     setEditName(company.name || '');
+
+    let dept = company.department || '';
+    if (!dept) {
+      if (company.zone?.toLowerCase().includes('asunci') || company.city?.toLowerCase().includes('asunci')) {
+        dept = 'Asunción (Distrito Capital)';
+      } else {
+        dept = 'Central';
+      }
+    } else if (dept === 'Capital') {
+      dept = 'Asunción (Distrito Capital)';
+    }
+    setEditDepartment(dept);
+
+    const availableCities = getCiudadesPorDepartamento(dept);
+    const city = company.city && availableCities.includes(company.city)
+      ? company.city
+      : (availableCities[0] || 'San Lorenzo');
+    setEditCity(city);
+
     setEditZone(company.zone || '');
     setEditMapsUrl(company.maps_url || '');
     setEditNotes(company.notes || '');
@@ -130,10 +173,20 @@ export default function EmpresaDetallePage() {
       toast.error('El nombre de la empresa es obligatorio');
       return;
     }
+    if (!editDepartment) {
+      toast.error('Seleccione el departamento (INE)');
+      return;
+    }
+    if (!editCity) {
+      toast.error('Seleccione la ciudad / municipio (INE)');
+      return;
+    }
     setEditSubmitting(true);
     try {
       const res = await api.put(`/empresas/${id}`, {
         name: editName.trim(),
+        department: editDepartment.trim(),
+        city: editCity.trim(),
         zone: editZone.trim(),
         mapsUrl: editMapsUrl.trim(),
         notes: editNotes.trim(),
@@ -209,8 +262,9 @@ export default function EmpresaDetallePage() {
         return <span className="pill pill-orange">En negociación</span>;
       case 'Prospecto':
         return <span className="pill pill-yellow">Prospecto</span>;
+      case 'Venta perdida':
       case 'Sin interés':
-        return <span className="pill pill-red">Sin interés</span>;
+        return <span className="pill pill-red">Venta perdida</span>;
       case 'Inactivo':
         return <span className="pill pill-gray">Inactivo</span>;
       default:
@@ -225,6 +279,7 @@ export default function EmpresaDetallePage() {
       case 'Propuesta enviada':
       case 'En negociación':
         return 'pill-orange';
+      case 'Venta perdida':
       case 'Sin interés':
         return 'pill-red';
       default:
@@ -336,7 +391,7 @@ export default function EmpresaDetallePage() {
                   <option value="Prospecto">Prospecto</option>
                   <option value="En negociación">En negociación</option>
                   <option value="Contratado">Contratado</option>
-                  <option value="Sin interés">Sin interés</option>
+                  <option value="Venta perdida">Venta perdida</option>
                   <option value="Inactivo">Inactivo</option>
                 </select>
               </div>
@@ -359,11 +414,22 @@ export default function EmpresaDetallePage() {
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 4 }} className="flex items-center gap-1">
               <MapPin size={13} />
-              <span>CIUDAD / ZONA (DIRECCIÓN)</span>
+              <span>UBICACIÓN / CIUDAD</span>
             </div>
-            <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '0.92rem' }}>
-              {company.zone || <span className="muted" style={{ fontStyle: 'italic', fontWeight: 400 }}>No especificada</span>}
+            <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '0.92rem' }}>
+              {company.city && company.department ? (
+                <span>{company.city}, {company.department}</span>
+              ) : company.city || company.department ? (
+                <span>{company.city || company.department}</span>
+              ) : (
+                company.zone || <span className="muted" style={{ fontStyle: 'italic', fontWeight: 400 }}>No especificada</span>
+              )}
             </div>
+            {company.zone && (company.city || company.department) && (
+              <div className="muted" style={{ fontSize: '0.8rem', marginTop: 3 }}>
+                {company.zone}
+              </div>
+            )}
           </div>
 
           <div>
@@ -596,37 +662,93 @@ export default function EmpresaDetallePage() {
                 overflow: 'hidden',
               }}
             >
-              <div style={{ padding: '18px 22px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ padding: '18px 22px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="field">
-                  <label>Nombre de la Empresa *</label>
+                  <label htmlFor="edit-empresa-nombre" style={{ fontWeight: 700 }}>
+                    Nombre de la Empresa *
+                  </label>
                   <input
                     id="edit-empresa-nombre"
                     type="text"
                     required
+                    placeholder="Ej. Comercial Horizonte S.A."
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
+                    style={{ height: 42, fontWeight: 600 }}
                   />
                 </div>
 
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="field">
+                    <label htmlFor="edit-empresa-departamento" style={{ fontWeight: 700 }}>
+                      Departamento (INE) *
+                    </label>
+                    <select
+                      id="edit-empresa-departamento"
+                      value={editDepartment}
+                      onChange={(e) => {
+                        const dept = e.target.value;
+                        setEditDepartment(dept);
+                        const cities = getCiudadesPorDepartamento(dept);
+                        if (cities.length > 0) setEditCity(cities[0]);
+                        else setEditCity('');
+                      }}
+                      required
+                      style={{ height: 42, fontWeight: 600 }}
+                    >
+                      {DEPARTAMENTOS_PARAGUAY.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label htmlFor="edit-empresa-ciudad" style={{ fontWeight: 700 }}>
+                      Ciudad / Municipio (INE) *
+                    </label>
+                    <select
+                      id="edit-empresa-ciudad"
+                      value={editCity}
+                      onChange={(e) => setEditCity(e.target.value)}
+                      required
+                      style={{ height: 42, fontWeight: 600 }}
+                    >
+                      {getCiudadesPorDepartamento(editDepartment).map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="field">
-                  <label>Ciudad / Zona (Dirección principal)</label>
+                  <label htmlFor="edit-empresa-zona" style={{ fontWeight: 700 }}>
+                    Dirección o barrio específico (opcional)
+                  </label>
                   <input
                     id="edit-empresa-zona"
                     type="text"
-                    placeholder="Ej. Asunción - Villa Morra"
+                    placeholder="Ej. B° Villa Morra, Av. Mcal. López c/ San Martín"
                     value={editZone}
                     onChange={(e) => setEditZone(e.target.value)}
+                    style={{ height: 42 }}
                   />
                 </div>
 
                 <div className="field">
-                  <label>Enlace Google Maps</label>
+                  <label htmlFor="edit-empresa-maps" style={{ fontWeight: 700 }}>
+                    Enlace Google Maps (opcional)
+                  </label>
                   <input
                     id="edit-empresa-maps"
                     type="url"
                     placeholder="https://maps.google.com/..."
                     value={editMapsUrl}
                     onChange={(e) => setEditMapsUrl(e.target.value)}
+                    style={{ height: 42 }}
                   />
                 </div>
 
@@ -640,7 +762,7 @@ export default function EmpresaDetallePage() {
                     <option value="Prospecto">Prospecto</option>
                     <option value="En negociación">En negociación</option>
                     <option value="Contratado">Contratado</option>
-                    <option value="Sin interés">Sin interés</option>
+                    <option value="Venta perdida">Venta perdida</option>
                     <option value="Inactivo">Inactivo</option>
                   </select>
                 </div>
@@ -769,7 +891,7 @@ export default function EmpresaDetallePage() {
                     <option value="Propuesta enviada">Propuesta enviada</option>
                     <option value="En negociación">En negociación</option>
                     <option value="Contratado">Contratado</option>
-                    <option value="Sin interés">Sin interés</option>
+                    <option value="Venta perdida">Venta perdida</option>
                     <option value="Visita realizada">Visita realizada</option>
                   </select>
                 </div>

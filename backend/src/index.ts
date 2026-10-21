@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { pool } from './db/pool';
+import { runMigrations } from './db/migrations';
 import { seedSuperAdmin } from './db/seed';
 import authRouter from './routes/auth';
 import jornadasRouter from './routes/jornadas';
@@ -12,6 +13,7 @@ import empresasRouter from './routes/empresas';
 import usuariosRouter from './routes/usuarios';
 import exportacionRouter from './routes/exportacion';
 import dashboardRouter from './routes/dashboard';
+import inversionRouter from './routes/inversion';
 import { logger } from './utils/logger';
 
 dotenv.config();
@@ -61,6 +63,7 @@ app.use('/empresas', empresasRouter);
 app.use('/usuarios', usuariosRouter);
 app.use('/exportacion', exportacionRouter);
 app.use('/dashboard', dashboardRouter);
+app.use('/inversion', inversionRouter);
 
 // ─── 404 handler ─────────────────────────────────────────
 app.use((_req, res) => {
@@ -79,6 +82,9 @@ async function start() {
     // Verificar conexión a BD
     await pool.query('SELECT 1');
     logger.info('✅ Conexión a PostgreSQL establecida');
+
+    // Ejecutar migraciones automáticas
+    await runMigrations();
 
     // Seed superadmin
     await seedSuperAdmin();

@@ -8,6 +8,8 @@ import HistorialPage from './pages/Historial';
 import EmpresasPage from './pages/Empresas';
 import EmpresaDetallePage from './pages/EmpresaDetalle';
 import ExportacionPage from './pages/Exportacion';
+import InversionEmpresasPage from './pages/InversionEmpresas';
+import JornadasEnCursoPage from './pages/JornadasEnCurso';
 import UsuariosPage from './pages/Usuarios';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -34,9 +36,25 @@ export default function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="nueva-jornada" element={<NuevaJornadaPage />} />
+        <Route
+          path="jornadas-en-curso"
+          element={
+            <ProtectedRoute roles={['admin', 'gerente']}>
+              <JornadasEnCursoPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="historial" element={<HistorialPage />} />
         <Route path="empresas" element={<EmpresasPage />} />
         <Route path="empresas/:id" element={<EmpresaDetallePage />} />
+        <Route
+          path="inversion"
+          element={
+            <ProtectedRoute roles={['admin', 'gerente']}>
+              <InversionEmpresasPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="exportacion"
           element={

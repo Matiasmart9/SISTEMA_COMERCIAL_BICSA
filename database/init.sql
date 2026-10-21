@@ -36,6 +36,7 @@ CREATE TYPE visit_result AS ENUM (
   'Propuesta enviada',
   'En negociación',
   'Contratado',
+  'Venta perdida',
   'Sin interés',
   'Visita realizada'
 );
@@ -45,6 +46,7 @@ CREATE TYPE company_status AS ENUM (
   'Prospecto',
   'En negociación',
   'Contratado',
+  'Venta perdida',
   'Sin interés',
   'Inactivo'
 );
@@ -79,6 +81,8 @@ CREATE TABLE companies (
   name            VARCHAR(255) NOT NULL,
   normalized_name VARCHAR(255) NOT NULL,  -- lowercase, sin espacios extra
   commercial_status company_status NOT NULL DEFAULT 'Prospecto',
+  department      VARCHAR(100),            -- Departamento INE
+  city            VARCHAR(100),            -- Ciudad / Distrito INE
   zone            VARCHAR(255),            -- Ciudad / Zona / Dirección principal
   maps_url        VARCHAR(500),            -- Enlace Google Maps principal
   notes           TEXT,
@@ -98,20 +102,29 @@ CREATE TABLE work_days (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   date        DATE NOT NULL,
-  km_start    INTEGER NOT NULL CHECK (km_start >= 0),
-  km_end      INTEGER NOT NULL CHECK (km_end >= 0),
+  km_start    INTEGER CHECK (km_start >= 0),
+  km_end      INTEGER CHECK (km_end >= 0),
   km_total    INTEGER GENERATED ALWAYS AS (km_end - km_start) STORED,
   km_start_photo TEXT,
   km_end_photo   TEXT,
+  status      VARCHAR(20) NOT NULL DEFAULT 'cerrada', -- 'abierta', 'cerrada'
+  mobility_type VARCHAR(30) NOT NULL DEFAULT 'propia', -- 'propia', 'plataforma'
+  platform_trips JSONB DEFAULT '[]'::jsonb, -- array de traslados: [{platform, amount, note}]
+  transport_total_gs INTEGER DEFAULT 0,
+  fuel_amount_gs INTEGER DEFAULT 0,
+  fuel_pending_at_start BOOLEAN DEFAULT false,
+  closed_at   TIMESTAMPTZ,
   notes       TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT chk_km_order CHECK (km_end >= km_start)
+  CONSTRAINT chk_km_order CHECK (km_end IS NULL OR km_start IS NULL OR km_end >= km_start)
 );
 
 CREATE INDEX idx_work_days_user_id ON work_days(user_id);
 CREATE INDEX idx_work_days_date ON work_days(date);
 CREATE INDEX idx_work_days_user_date ON work_days(user_id, date);
+CREATE INDEX idx_work_days_status ON work_days(status);
+CREATE INDEX idx_work_days_user_status ON work_days(user_id, status);
 
 -- ============================================================
 -- TABLA: Visitas (múltiples por jornada)
@@ -123,13 +136,20 @@ CREATE TABLE visits (
   company_id    UUID NOT NULL REFERENCES companies(id) ON DELETE RESTRICT,
   date          DATE NOT NULL,
   visit_type    visit_type NOT NULL,
+  department    VARCHAR(100),
+  city          VARCHAR(100),
   zone          VARCHAR(255),
   maps_url      VARCHAR(500),
   reason        visit_reason NOT NULL,
   funnel_stage  funnel_stage NOT NULL,
   result        visit_result NOT NULL DEFAULT 'Pendiente',
-  uber_ref_gs   INTEGER CHECK (uber_ref_gs >= 0),  -- referencia Uber solo ida (Gs.)
-  bolt_ref_gs   INTEGER CHECK (bolt_ref_gs >= 0),  -- referencia Bolt solo ida (Gs.)
+  transport_cost_gs INTEGER DEFAULT 0,     -- Costo de traslado por plataforma (Bolt, Uber, Taxi) a esta visita
+  platform_used VARCHAR(50),               -- Plataforma utilizada (Bolt, Uber, MUV, Taxi, Otro)
+  fuel_allocated_gs INTEGER DEFAULT 0,     -- Porción prorrateada de combustible si movilidad propia
+  other_expenses_gs INTEGER DEFAULT 0,     -- Otros gastos de la visita (almuerzos, peajes, etc.)
+  total_cost_gs INTEGER DEFAULT 0,         -- Total invertido en esta visita
+  uber_ref_gs   INTEGER CHECK (uber_ref_gs >= 0),  -- referencia Uber solo ida (Gs. legado)
+  bolt_ref_gs   INTEGER CHECK (bolt_ref_gs >= 0),  -- referencia Bolt solo ida (Gs. legado)
   notes         TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -141,6 +161,8 @@ CREATE INDEX idx_visits_company_id ON visits(company_id);
 CREATE INDEX idx_visits_date ON visits(date);
 CREATE INDEX idx_visits_funnel_stage ON visits(funnel_stage);
 CREATE INDEX idx_visits_result ON visits(result);
+CREATE INDEX idx_visits_department ON visits(department);
+CREATE INDEX idx_visits_city ON visits(city);
 -- Índice para consultas por usuario y fecha
 CREATE INDEX idx_visits_user_date ON visits(user_id, date);
 
@@ -213,6 +235,8 @@ SELECT
   c.id AS company_id,
   c.name AS company_name,
   c.commercial_status,
+  c.department,
+  c.city,
   c.zone,
   c.maps_url,
   c.notes,
@@ -224,4 +248,4 @@ SELECT
 FROM companies c
 LEFT JOIN visits v ON v.company_id = c.id
 LEFT JOIN users u ON u.id = v.user_id
-GROUP BY c.id, c.name, c.commercial_status, c.zone, c.maps_url, c.notes;
+GROUP BY c.id, c.name, c.commercial_status, c.department, c.city, c.zone, c.maps_url, c.notes;
