@@ -134,7 +134,7 @@ router.get('/insights', async (req: Request, res: Response) => {
         `SELECT funnel_stage::text AS stage, COUNT(*) AS count FROM visits
          WHERE TO_CHAR(date,'YYYY-MM') = $1 GROUP BY funnel_stage`, [month]),
       pool.query(
-        `SELECT u.id, u.full_name, u.role,
+        `SELECT u.id, u.full_name, u.role, u.avatar_url,
            COALESCE(v.visitas,0) AS visitas,
            COALESCE(v.empresas,0) AS empresas,
            COALESCE(v.cierres,0) AS cierres,

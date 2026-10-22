@@ -2,17 +2,17 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { body, validationResult } from 'express-validator';
 import { pool } from '../db/pool';
-import { authMiddleware, isAdmin } from '../middleware/auth';
+import { authMiddleware, isAdmin, isAdminOrGerente } from '../middleware/auth';
 
 const router = Router();
 router.use(authMiddleware);
 
-// GET /usuarios — solo admin (excluye al superadmin de la lista)
-router.get('/', isAdmin, async (_req: Request, res: Response) => {
+// GET /usuarios — admin y gerente (para reportes, exportaciones y monitoreo)
+router.get('/', isAdminOrGerente, async (_req: Request, res: Response) => {
   try {
     const superAdminEmail = process.env.SUPERADMIN_EMAIL || 'matiasmart7@gmail.com';
     const result = await pool.query(`
-      SELECT id, email, full_name, role, is_active, photo_odometer_enabled, created_at, updated_at
+      SELECT id, email, full_name, role, is_active, photo_odometer_enabled, avatar_url, last_login_at, created_at, updated_at
       FROM users
       WHERE email != $1
       ORDER BY full_name ASC
@@ -20,6 +20,76 @@ router.get('/', isAdmin, async (_req: Request, res: Response) => {
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// PUT /usuarios/perfil/avatar — cambiar o eliminar foto de perfil propia (cualquier usuario autenticado)
+router.put('/perfil/avatar', async (req: Request, res: Response) => {
+  const { avatarUrl } = req.body;
+  const sanitizedUrl = avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '' ? avatarUrl.trim() : null;
+
+  try {
+    const result = await pool.query(
+      `UPDATE users
+       SET avatar_url = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, email, full_name, role, is_active, photo_odometer_enabled, avatar_url`,
+      [sanitizedUrl, req.user!.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const u = result.rows[0];
+    await pool.query(
+      `INSERT INTO audit_log (action, target_user_id, performed_by, details)
+       VALUES ($1, $2, $3, $4)`,
+      [sanitizedUrl ? 'UPDATE_PROFILE_AVATAR' : 'DELETE_PROFILE_AVATAR', u.id, req.user!.userId, JSON.stringify({ hasAvatar: Boolean(sanitizedUrl) })]
+    );
+
+    res.json({
+      id: u.id,
+      email: u.email,
+      fullName: u.full_name,
+      role: u.role,
+      isActive: u.is_active,
+      photoOdometerEnabled: Boolean(u.photo_odometer_enabled),
+      avatarUrl: u.avatar_url,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar foto de perfil' });
+  }
+});
+
+// PATCH /usuarios/:id/avatar — cambiar o eliminar foto de un usuario (solo admin)
+router.patch('/:id/avatar', isAdmin, async (req: Request, res: Response) => {
+  const { avatarUrl } = req.body;
+  const sanitizedUrl = avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '' ? avatarUrl.trim() : null;
+
+  try {
+    const result = await pool.query(
+      `UPDATE users
+       SET avatar_url = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, email, full_name, role, is_active, photo_odometer_enabled, avatar_url`,
+      [sanitizedUrl, req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const u = result.rows[0];
+    await pool.query(
+      `INSERT INTO audit_log (action, target_user_id, performed_by, details)
+       VALUES ($1, $2, $3, $4)`,
+      [sanitizedUrl ? 'ADMIN_UPDATE_USER_AVATAR' : 'ADMIN_DELETE_USER_AVATAR', u.id, req.user!.userId, JSON.stringify({ hasAvatar: Boolean(sanitizedUrl) })]
+    );
+
+    res.json(u);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar foto de perfil del usuario' });
   }
 });
 
@@ -33,6 +103,7 @@ router.post('/',
     body('fullName').trim().notEmpty(),
     body('role').isIn(['ejecutivo', 'gerente', 'admin']),
     body('photoOdometerEnabled').optional().isBoolean(),
+    body('avatarUrl').optional({ nullable: true }).isString(),
   ],
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -40,7 +111,8 @@ router.post('/',
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password, fullName, role, photoOdometerEnabled } = req.body;
+    const { email, password, fullName, role, photoOdometerEnabled, avatarUrl } = req.body;
+    const sanitizedAvatar = avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '' ? avatarUrl.trim() : null;
     const client = await pool.connect();
     try {
       const existing = await client.query('SELECT id FROM users WHERE email = $1', [email]);
@@ -50,16 +122,16 @@ router.post('/',
 
       const hash = await bcrypt.hash(password, 12);
       const result = await client.query(`
-        INSERT INTO users (email, password_hash, full_name, role, is_active, photo_odometer_enabled, created_by)
-        VALUES ($1, $2, $3, $4, true, $5, $6)
-        RETURNING id, email, full_name, role, is_active, photo_odometer_enabled, created_at
-      `, [email, hash, fullName, role, Boolean(photoOdometerEnabled), req.user!.userId]);
+        INSERT INTO users (email, password_hash, full_name, role, is_active, photo_odometer_enabled, avatar_url, created_by)
+        VALUES ($1, $2, $3, $4, true, $5, $6, $7)
+        RETURNING id, email, full_name, role, is_active, photo_odometer_enabled, avatar_url, created_at
+      `, [email, hash, fullName, role, Boolean(photoOdometerEnabled), sanitizedAvatar, req.user!.userId]);
 
       // Auditoría
       await client.query(`
         INSERT INTO audit_log (action, target_user_id, performed_by, details)
         VALUES ('CREATE_USER', $1, $2, $3)
-      `, [result.rows[0].id, req.user!.userId, JSON.stringify({ role, email, photo_odometer_enabled: Boolean(photoOdometerEnabled) })]);
+      `, [result.rows[0].id, req.user!.userId, JSON.stringify({ role, email, photo_odometer_enabled: Boolean(photoOdometerEnabled), hasAvatar: Boolean(sanitizedAvatar) })]);
 
       res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -111,14 +183,21 @@ router.patch('/:id/toggle', isAdmin, async (req: Request, res: Response) => {
 // PATCH /usuarios/:id/photo-odometer-toggle — habilitar/deshabilitar fotos de odómetro (solo admin)
 router.patch('/:id/photo-odometer-toggle', isAdmin, async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(
-      `UPDATE users
-       SET photo_odometer_enabled = NOT photo_odometer_enabled,
-           updated_at = NOW()
-       WHERE id = $1
-       RETURNING id, email, full_name, role, is_active, photo_odometer_enabled`,
-      [req.params.id]
-    );
+    const hasExplicit = req.body && typeof req.body.enabled === 'boolean';
+    const query = hasExplicit
+      ? `UPDATE users
+         SET photo_odometer_enabled = $2,
+             updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, email, full_name, role, is_active, photo_odometer_enabled, avatar_url, last_login_at`
+      : `UPDATE users
+         SET photo_odometer_enabled = NOT photo_odometer_enabled,
+             updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, email, full_name, role, is_active, photo_odometer_enabled, avatar_url, last_login_at`;
+
+    const params = hasExplicit ? [req.params.id, req.body.enabled] : [req.params.id];
+    const result = await pool.query(query, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });

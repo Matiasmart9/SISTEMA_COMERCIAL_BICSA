@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   fullName: string;
   role: 'admin' | 'gerente' | 'ejecutivo';
   photoOdometerEnabled?: boolean;
+  avatarUrl?: string | null;
 }
 
 interface AuthContextType {
@@ -14,6 +15,8 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => void;
+  updateUser: (fields: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -54,8 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const updateUser = (fields: Partial<User>) => {
+    setUser((prev) => (prev ? { ...prev, ...fields } : null));
+  };
+
+  const refreshUser = async () => {
+    await fetchMe();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

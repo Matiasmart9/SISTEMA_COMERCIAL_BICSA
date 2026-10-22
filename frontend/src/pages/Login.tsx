@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -10,20 +10,48 @@ interface LoginForm {
   password: string;
 }
 
+const STORAGE_KEY = 'bicsa_remembered_credentials';
+
 export default function LoginPage() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginForm>();
+
+  // Cargar credenciales guardadas si existen
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.email) setValue('email', parsed.email);
+        if (parsed.password) setValue('password', parsed.password);
+        if (parsed.rememberMe) setRememberMe(true);
+      }
+    } catch {
+      // Ignorar errores de parseo
+    }
+  }, [setValue]);
 
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     setErrorMessage(null);
     try {
+      if (rememberMe) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          email: data.email,
+          password: data.password,
+          rememberMe: true,
+        }));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+
       const user = await login(data.email, data.password);
       const firstName = user?.fullName?.split(' ')[0] || '';
-      toast.success(`¡Bienvenido/a${firstName ? ', ' + firstName : ''}! · Sistema BICSA ${APP_VERSION}`, {
+      toast.success(`¡Bienvenido/a${firstName ? ', ' + firstName : ''}!`, {
         duration: 3500,
       });
     } catch (err: any) {
@@ -45,15 +73,10 @@ export default function LoginPage() {
               alt="BICSA"
               className="login-logo-img"
             />
-            <h1 className="sr-only">BICSA</h1>
           </div>
-          <div className="login-tagline">Gestión de Visitas Comerciales</div>
-          <span className="version-badge" title={`Versión ${APP_VERSION}`}>{APP_VERSION}</span>
+          <h2 className="login-welcome-title">Bienvenido</h2>
+          <p className="login-welcome-subtitle">Ingresa tus credenciales para continuar</p>
         </header>
-
-        <div className="login-divider">
-          <span>Iniciar sesión</span>
-        </div>
 
         {errorMessage && (
           <div
@@ -71,7 +94,7 @@ export default function LoginPage() {
               border: '1px solid #FECACA',
             }}
           >
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            <AlertCircle size={18} strokeWidth={1.5} style={{ flexShrink: 0 }} />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -80,7 +103,7 @@ export default function LoginPage() {
           <div className="field">
             <label htmlFor="email">Correo electrónico</label>
             <div className="login-input-wrap">
-              <Mail size={17} className="login-input-icon" />
+              <Mail size={18} strokeWidth={1.5} className="login-input-icon" />
               <input
                 id="email"
                 type="email"
@@ -99,7 +122,7 @@ export default function LoginPage() {
           <div className="field">
             <label htmlFor="password">Contraseña</label>
             <div className="login-input-wrap">
-              <Lock size={17} className="login-input-icon" />
+              <Lock size={18} strokeWidth={1.5} className="login-input-icon" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -116,10 +139,22 @@ export default function LoginPage() {
                 aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                {showPassword ? <EyeOff size={18} strokeWidth={1.5} /> : <Eye size={18} strokeWidth={1.5} />}
               </button>
             </div>
             {errors.password && <div className="field-error">{errors.password.message}</div>}
+          </div>
+
+          <div className="login-options-row">
+            <label className="login-remember-label">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="login-remember-checkbox"
+              />
+              <span>Recordar usuario</span>
+            </label>
           </div>
 
           <button
@@ -136,15 +171,16 @@ export default function LoginPage() {
             ) : (
               <>
                 <span>Iniciar Sesión</span>
-                <ArrowRight size={18} />
+                <ArrowRight size={18} strokeWidth={1.75} />
               </>
             )}
           </button>
         </form>
 
         <footer className="login-footer">
-          <div className="login-copy">
-            BICSA · Sistema de Gestión Comercial · {APP_VERSION}
+          <div className="login-footer-row">
+            <span className="login-copy-brand">BICSA · Gestión Comercial</span>
+            <span className="login-copy-version">{APP_VERSION}</span>
           </div>
         </footer>
       </div>

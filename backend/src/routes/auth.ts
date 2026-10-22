@@ -23,7 +23,7 @@ router.post('/login',
 
     try {
       const result = await pool.query(
-        `SELECT id, email, password_hash, full_name, role, is_active, photo_odometer_enabled
+        `SELECT id, email, password_hash, full_name, role, is_active, photo_odometer_enabled, avatar_url
          FROM users WHERE email = $1`,
         [email]
       );
@@ -43,6 +43,8 @@ router.post('/login',
         return res.status(401).json({ error: 'Credenciales incorrectas' });
       }
 
+      await pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
+
       const secret = process.env.JWT_SECRET!;
       const expiresIn = process.env.JWT_EXPIRES_IN || '8h';
 
@@ -60,6 +62,7 @@ router.post('/login',
           fullName: user.full_name,
           role: user.role,
           photoOdometerEnabled: Boolean(user.photo_odometer_enabled),
+          avatarUrl: user.avatar_url || null,
         },
       });
     } catch (err) {
@@ -72,7 +75,7 @@ router.post('/login',
 router.get('/me', authMiddleware, async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      `SELECT id, email, full_name, role, is_active, photo_odometer_enabled, created_at
+      `SELECT id, email, full_name, role, is_active, photo_odometer_enabled, avatar_url, last_login_at, created_at
        FROM users WHERE id = $1`,
       [req.user!.userId]
     );
@@ -87,6 +90,8 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       role: u.role,
       isActive: u.is_active,
       photoOdometerEnabled: Boolean(u.photo_odometer_enabled),
+      avatarUrl: u.avatar_url || null,
+      lastLoginAt: u.last_login_at,
       createdAt: u.created_at,
     });
   } catch (err) {

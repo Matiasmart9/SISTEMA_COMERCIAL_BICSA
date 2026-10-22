@@ -10,10 +10,12 @@ import {
   Download,
   Users,
   LogOut,
+  Camera,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { APP_VERSION } from '../version';
 import { api } from '../api/client';
+import ProfilePhotoModal from './ProfilePhotoModal';
 
 const roleLabel = {
   admin: 'Administrador',
@@ -25,6 +27,7 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [hasActiveJornada, setHasActiveJornada] = useState<boolean>(false);
+  const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
 
   // Consultar si hay una jornada abierta / en curso para el usuario
   const checkActiveJornada = async () => {
@@ -124,19 +127,53 @@ export default function Layout() {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <div className="sidebar-user">
-            <div className="sidebar-user-avatar">{initials}</div>
+          <div
+            className="sidebar-user"
+            onClick={() => setShowPhotoModal(true)}
+            role="button"
+            tabIndex={0}
+            title="Haz clic para cambiar o eliminar tu foto de perfil"
+          >
+            <div className="sidebar-user-avatar-wrap">
+              <div className="sidebar-user-avatar">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName}
+                    className="sidebar-user-avatar-img"
+                  />
+                ) : (
+                  initials
+                )}
+              </div>
+              <div className="sidebar-avatar-hover-overlay" title="Cambiar foto">
+                <Camera size={14} />
+              </div>
+            </div>
             <div className="sidebar-user-info">
-              <div className="sidebar-user-name">{user.fullName}</div>
+              <div className="sidebar-user-name" title={user.fullName}>{user.fullName}</div>
               <div className="sidebar-user-role">{roleLabel[user.role]}</div>
+            </div>
+            <div className="sidebar-user-action-hint">
+              <Camera size={11} style={{ marginRight: 3 }} />
+              <span>Cambiar imagen</span>
             </div>
           </div>
           <button className="logout-btn" onClick={logout} title="Cerrar sesión">
             <LogOut size={16} />
-            <span>Salir</span>
+            <span>Cerrar sesión</span>
           </button>
           <div className="sidebar-version">Sistema Comercial BICSA · {APP_VERSION}</div>
         </div>
+
+        <ProfilePhotoModal
+          isOpen={showPhotoModal}
+          onClose={() => setShowPhotoModal(false)}
+          userId={user.id}
+          userName={user.fullName}
+          currentAvatarUrl={user.avatarUrl}
+          onSuccess={() => {}}
+        />
       </aside>
       <div className="main-content">
         <div className="page-content fade-in">

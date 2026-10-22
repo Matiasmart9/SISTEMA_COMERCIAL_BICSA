@@ -18,6 +18,7 @@ interface RankingItem {
   id: string;
   full_name: string;
   role?: string;
+  avatar_url?: string | null;
   visitas: string | number;
   empresas: string | number;
   cierres: string | number;
@@ -91,26 +92,53 @@ export default function ManagerInsights({ month }: { month: string }) {
   const maxRankExpenses = Math.max(1, ...data.ranking.map((r) => num(r.total_gastos_gs)));
   const totalTeamExpenses = data.ranking.reduce((acc, r) => acc + num(r.total_gastos_gs), 0);
 
+  const rankingList = [...data.ranking].sort((a, b) => num(b.total_gastos_gs) - num(a.total_gastos_gs));
+
+  function getInitials(name: string) {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  }
+
   return (
     <div className="mi-wrap">
       <div className="mi-two-col">
         {/* Embudo comercial */}
         <div className="card">
-          <h2 className="card-title">Embudo comercial del mes</h2>
-          <p className="muted" style={{ fontSize: '0.8rem', marginBottom: 14 }}>Visitas registradas según la etapa en que quedó cada gestión</p>
-          <div className="mi-bars">
-            {data.funnel.map((f, i) => {
+          <div style={{ marginBottom: 16 }}>
+            <h2 className="card-title">Embudo comercial del mes</h2>
+            <p className="muted" style={{ fontSize: '0.8rem', marginTop: 2 }}>
+              Visitas registradas según la etapa en que quedó cada gestión
+            </p>
+          </div>
+          <div className="mi-bars" style={{ gap: 14 }}>
+            {data.funnel.map((f) => {
               const isWin = f.stage === 'Contrato' || f.stage === 'Venta ganada / Suscripción';
+              const pct = maxFunnel > 0 ? (f.count / maxFunnel) * 100 : 0;
               return (
-                <div className="mi-bar-row" key={f.stage}>
-                  <span className="mi-bar-label">{f.stage}</span>
-                  <div className="mi-bar-track">
+                <div key={f.stage} className="mi-funnel-item">
+                  <div className="mi-funnel-header">
+                    <span className="mi-funnel-label">{f.stage}</span>
+                    <span className={`mi-funnel-val ${isWin && f.count > 0 ? 'mi-funnel-val-win' : ''}`}>
+                      {f.count}
+                    </span>
+                  </div>
+                  <div className="mi-funnel-track">
                     <div
-                      className={`mi-bar-fill ${isWin ? 'mi-bar-green' : ''}`}
-                      style={{ width: `${(f.count / maxFunnel) * 100}%`, opacity: isWin ? 1 : 1 - i * 0.12 }}
+                      className={`mi-funnel-fill ${
+                        f.count === 0
+                          ? 'mi-funnel-fill-zero'
+                          : isWin
+                            ? 'mi-funnel-fill-win'
+                            : 'mi-funnel-fill-pipeline'
+                      }`}
+                      style={{ width: `${f.count > 0 ? Math.max(6, pct) : 0}%` }}
                     />
                   </div>
-                  <span className="mi-bar-value">{f.count}</span>
                 </div>
               );
             })}
@@ -119,13 +147,13 @@ export default function ManagerInsights({ month }: { month: string }) {
 
         {/* Gastos del mes por integrante comercial */}
         <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
             <div>
               <h2 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Wallet size={18} color="var(--primary)" /> Gastos del mes por integrante comercial
               </h2>
               <p className="muted" style={{ fontSize: '0.8rem', marginTop: 2 }}>
-                Inversión acumulada en combustible, movilidad y gastos extras ({monthLabel(data.month)})
+                Inversión acumulada en combustible, movilidad y viáticos ({monthLabel(data.month)})
               </p>
             </div>
             {totalTeamExpenses > 0 && (
@@ -135,74 +163,99 @@ export default function ManagerInsights({ month }: { month: string }) {
             )}
           </div>
 
-          {data.ranking.length === 0 ? (
+          {rankingList.length === 0 ? (
             <p className="subtle" style={{ fontSize: '0.85rem' }}>Sin registros para este mes.</p>
           ) : (
             <div className="mi-rank-list">
-              {data.ranking.map((r, i) => {
+              {rankingList.map((r, i) => {
                 const totalGastos = num(r.total_gastos_gs);
                 const combustible = num(r.combustible_gs);
                 const movilidad = num(r.movilidad_gs);
                 const otros = num(r.otros_gastos_gs);
                 const pct = maxRankExpenses > 0 ? (totalGastos / maxRankExpenses) * 100 : 0;
                 const isGerente = r.role === 'gerente';
+                const initials = getInitials(r.full_name);
 
                 return (
-                  <div className="mi-rank-row" key={r.id} style={{ alignItems: 'flex-start', padding: '12px 0' }}>
-                    <span className={`mi-rank-pos mi-rank-pos-${i + 1}`} style={{ marginTop: 2 }}>
-                      {i + 1}
-                    </span>
-                    <div className="mi-rank-main" style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                        <div className="flex items-center gap-2">
-                          <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{r.full_name}</span>
-                          {isGerente && (
-                            <span className="pill pill-gray" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
-                              Gerencia
-                            </span>
+                  <div className="mi-rank-card" key={r.id}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
+                        <div className="mi-avatar-initials" style={{ width: 38, height: 38, overflow: 'hidden', padding: 0, flexShrink: 0 }}>
+                          {r.avatar_url ? (
+                            <img
+                              src={r.avatar_url}
+                              alt={r.full_name}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            />
+                          ) : (
+                            initials
                           )}
                         </div>
-                        <strong style={{ color: totalGastos > 0 ? 'var(--primary-dark)' : 'var(--ink-muted)', fontSize: '0.95rem' }}>
+                        <div className="truncate min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '0.90rem' }}>{r.full_name}</span>
+                            {isGerente && (
+                              <span className="pill pill-gray" style={{ fontSize: '0.66rem', padding: '1px 5px' }}>
+                                Gerencia
+                              </span>
+                            )}
+                          </div>
+                          <div className="subtle" style={{ fontSize: '0.74rem', color: 'var(--ink-muted)' }}>
+                            {num(r.visitas)} {num(r.visitas) === 1 ? 'visita' : 'visitas'} • {num(r.jornadas)} {num(r.jornadas) === 1 ? 'jornada' : 'jornadas'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontWeight: 800, color: totalGastos > 0 ? 'var(--ink)' : 'var(--ink-subtle)', fontSize: '0.95rem' }}>
                           Gs. {totalGastos.toLocaleString('es-PY')}
-                        </strong>
+                        </div>
                       </div>
+                    </div>
 
-                      <div className="mi-bar-track mi-bar-track-sm" style={{ margin: '6px 0 8px' }}>
-                        <div
-                          className="mi-bar-fill"
-                          style={{
-                            width: `${pct}%`,
-                            background: totalGastos > 0 ? 'linear-gradient(90deg, var(--primary), #FFA45C)' : '#E2E8F0',
-                          }}
-                        />
-                      </div>
+                    <div className="mi-bar-track" style={{ height: 4, margin: '6px 0 9px', background: '#E2E8F0' }}>
+                      <div
+                        className="mi-bar-fill"
+                        style={{
+                          width: `${pct}%`,
+                          background: totalGastos > 0 ? 'linear-gradient(90deg, #EA580C, #F97316)' : '#CBD5E1',
+                        }}
+                      />
+                    </div>
 
-                      <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>
-                        {combustible > 0 && (
-                          <span style={{ background: '#FFF3EB', color: '#D84500', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
-                            ⛽ Combustible: Gs. {combustible.toLocaleString('es-PY')}
-                          </span>
-                        )}
-                        {movilidad > 0 && (
-                          <span style={{ background: '#F1F5F9', color: '#334155', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
-                            🚗 Movilidad: Gs. {movilidad.toLocaleString('es-PY')}
-                          </span>
-                        )}
-                        {otros > 0 && (
-                          <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
-                            🍽️ Otros: Gs. {otros.toLocaleString('es-PY')}
-                          </span>
-                        )}
-                        {totalGastos === 0 && (
-                          <span className="muted" style={{ fontStyle: 'italic' }}>
-                            Sin gastos registrados
-                          </span>
-                        )}
-                        <span>•</span>
-                        <span>
-                          {num(r.visitas)} {num(r.visitas) === 1 ? 'visita' : 'visitas'} ({num(r.jornadas)} {num(r.jornadas) === 1 ? 'jornada' : 'jornadas'})
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {combustible > 0 && (
+                        <span className="mi-expense-tag mi-expense-tag-fuel">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M7 3h7l3 3v15H7z"/><path d="M14 3v4h4"/><path d="M10 11h4M10 15h4"/><path d="M3 8v9a2 2 0 0 0 2 2h2"/><path d="M17 10h2l2 2v5h-2"/><circle cx="18.5" cy="19" r="1.5"/>
+                          </svg>
+                          Combustible: Gs. {combustible.toLocaleString('es-PY')}
                         </span>
-                      </div>
+                      )}
+                      {movilidad > 0 && (
+                        <span className="mi-expense-tag mi-expense-tag-mobility">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m3 13 2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5"/><path d="M3 13h18v5H3z"/><path d="M5 18v2M19 18v2"/><circle cx="7" cy="15.5" r=".7" fill="currentColor"/><circle cx="17" cy="15.5" r=".7" fill="currentColor"/><path d="M6 11h12"/>
+                          </svg>
+                          Movilidad: Gs. {movilidad.toLocaleString('es-PY')}
+                        </span>
+                      )}
+                      {otros > 0 && (
+                        <span className="mi-expense-tag mi-expense-tag-other">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3.5h6v3H9z"/><path d="m8 11 1.5 1.5L12 10M13.5 12H16"/><path d="m8 16 1.5 1.5L12 15M13.5 17H16"/>
+                          </svg>
+                          Viáticos / Otros: Gs. {otros.toLocaleString('es-PY')}
+                        </span>
+                      )}
+                      {totalGastos === 0 && (
+                        <span className="mi-expense-tag mi-expense-tag-none">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                          Sin gastos imputados en el período
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

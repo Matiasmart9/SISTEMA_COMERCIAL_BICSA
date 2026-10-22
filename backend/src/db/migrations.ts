@@ -31,6 +31,9 @@ export async function runMigrations() {
 
       ALTER TABLE companies ADD COLUMN IF NOT EXISTS department VARCHAR(100);
       ALTER TABLE companies ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
     `);
 
     // Actualización de ENUMs y migración de 'Sin interés' a 'Venta perdida'

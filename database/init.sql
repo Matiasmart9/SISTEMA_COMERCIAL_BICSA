@@ -62,6 +62,8 @@ CREATE TABLE users (
   role          user_role NOT NULL DEFAULT 'ejecutivo',
   is_active     BOOLEAN NOT NULL DEFAULT TRUE,
   photo_odometer_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  avatar_url    TEXT,
+  last_login_at TIMESTAMPTZ,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_by    UUID REFERENCES users(id) ON DELETE SET NULL,

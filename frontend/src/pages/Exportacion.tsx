@@ -37,7 +37,7 @@ export default function ExportacionPage() {
   useEffect(() => {
     api.get<any[]>('/usuarios')
       .then((res) => {
-        setExecutors(res.data.filter((u) => u.role === 'ejecutivo'));
+        setExecutors(res.data.filter((u) => u.is_active && (u.role === 'ejecutivo' || u.role === 'gerente')));
       })
       .catch((err) => console.error('Error al cargar ejecutivos:', err));
   }, []);
@@ -169,7 +169,7 @@ export default function ExportacionPage() {
             >
               <FileSpreadsheet size={20} />
               <span>
-                {downloading ? 'Generando libro Excel...' : 'Descargar Reporte en Excel (.xlsx)'}
+                {downloading ? 'Generando libro Excel...' : 'Descargar Reporte en Excel'}
               </span>
             </button>
           </div>
@@ -182,13 +182,6 @@ export default function ExportacionPage() {
               <Layers size={20} color="var(--primary)" />
               <span>Estructura del Libro de Excel BICSA</span>
             </h2>
-          </div>
-
-          <div className="alert alert-warning" style={{ marginBottom: 16 }}>
-            <Info size={18} />
-            <span>
-              El archivo generado incluye encabezados institucionales de color naranja <strong>(#e66a16)</strong> y contiene 6 hojas de cálculo oficiales y limpias (sin IDs técnicos de base de datos):
-            </span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
