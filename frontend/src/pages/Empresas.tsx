@@ -244,7 +244,7 @@ export default function EmpresasPage() {
             <input
               type="text"
               className="search-input-field"
-              placeholder="Buscar por nombre de empresa (ej. Horizonte, Ñandutí)..."
+              placeholder="Buscar empresa"
               value={query}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
