@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -58,7 +58,7 @@ const MONTH_OPTIONS = [
   { value: '10', label: 'Octubre' },
   { value: '11', label: 'Noviembre' },
   { value: '12', label: 'Diciembre' },
-  { value: 'todos', label: 'Todos los meses (Año completo)' },
+  { value: 'todos', label: '-- Todos --' },
 ];
 
 interface Jornada {
@@ -171,14 +171,27 @@ export default function HistorialPage() {
   // Pestaña activa
   const [activeTab, setActiveTab] = useState<'jornadas' | 'visitas'>('jornadas');
 
-  // Filtros de fecha (Año y Mes)
+  // Filtros de fecha (Año, Mes y Día/Fecha)
   const now = new Date();
   const currentYearStr = now.getFullYear().toString();
   const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
 
   const [selectedYear, setSelectedYear] = useState<string>(currentYearStr);
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
+  const [selectedDay, setSelectedDay] = useState<string>('todos');
   const [availableYears, setAvailableYears] = useState<string[]>([currentYearStr]);
+
+  // Días disponibles para el selector según el mes y año (28, 29, 30 o 31)
+  const daysInMonth = useMemo(() => {
+    if (selectedMonth === 'todos') return 31;
+    const y = parseInt(selectedYear, 10) || now.getFullYear();
+    const m = parseInt(selectedMonth, 10);
+    return new Date(y, m, 0).getDate();
+  }, [selectedYear, selectedMonth]);
+
+  const dayOptions = useMemo(() => {
+    return Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, '0'));
+  }, [daysInMonth]);
 
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [stageFilter, setStageFilter] = useState<string>('');
@@ -189,10 +202,14 @@ export default function HistorialPage() {
   const [periodKpis, setPeriodKpis] = useState<KPIs | null>(null);
   const [loadingKpis, setLoadingKpis] = useState<boolean>(false);
 
-  // Helper para rango de fechas según año y mes
-  const getDateRange = (yr: string, mo: string) => {
+  // Helper para rango de fechas según año, mes y día
+  const getDateRange = (yr: string, mo: string, dy: string = 'todos') => {
     if (mo === 'todos') {
       return { from: `${yr}-01-01`, to: `${yr}-12-31` };
+    }
+    if (dy && dy !== 'todos') {
+      const exactDate = `${yr}-${mo}-${dy.padStart(2, '0')}`;
+      return { from: exactDate, to: exactDate };
     }
     const lastDay = new Date(parseInt(yr, 10), parseInt(mo, 10), 0).getDate();
     return {
@@ -270,12 +287,12 @@ export default function HistorialPage() {
   }, [isManager]);
 
   // Cargar KPIs de Cierre de Período
-  async function loadPeriodKpis(yr: string, mo: string, usr: string) {
+  async function loadPeriodKpis(yr: string, mo: string, dy: string, usr: string) {
     try {
       setLoadingKpis(true);
-      const { from, to } = getDateRange(yr, mo);
+      const { from, to } = getDateRange(yr, mo, dy);
       const params = new URLSearchParams();
-      if (mo !== 'todos') {
+      if (mo !== 'todos' && (!dy || dy === 'todos')) {
         params.append('month', `${yr}-${mo}`);
       } else {
         params.append('dateFrom', from);
@@ -293,27 +310,27 @@ export default function HistorialPage() {
   }
 
   useEffect(() => {
-    loadPeriodKpis(selectedYear, selectedMonth, selectedUser);
-  }, [selectedYear, selectedMonth, selectedUser]);
+    loadPeriodKpis(selectedYear, selectedMonth, selectedDay, selectedUser);
+  }, [selectedYear, selectedMonth, selectedDay, selectedUser]);
 
   // Cargar jornadas
   useEffect(() => {
     if (activeTab === 'jornadas') {
       loadJornadas();
     }
-  }, [activeTab, jornadaPage, selectedYear, selectedMonth, selectedUser]);
+  }, [activeTab, jornadaPage, selectedYear, selectedMonth, selectedDay, selectedUser]);
 
   // Cargar visitas
   useEffect(() => {
     if (activeTab === 'visitas') {
       loadVisits();
     }
-  }, [activeTab, visitPage, selectedYear, selectedMonth, selectedUser, stageFilter, resultFilter]);
+  }, [activeTab, visitPage, selectedYear, selectedMonth, selectedDay, selectedUser, stageFilter, resultFilter]);
 
   async function loadJornadas() {
     setLoading(true);
     try {
-      const { from, to } = getDateRange(selectedYear, selectedMonth);
+      const { from, to } = getDateRange(selectedYear, selectedMonth, selectedDay);
       const params = new URLSearchParams();
       params.append('page', jornadaPage.toString());
       params.append('limit', '15');
@@ -335,7 +352,7 @@ export default function HistorialPage() {
   async function loadVisits() {
     setLoading(true);
     try {
-      const { from, to } = getDateRange(selectedYear, selectedMonth);
+      const { from, to } = getDateRange(selectedYear, selectedMonth, selectedDay);
       const params = new URLSearchParams();
       params.append('page', visitPage.toString());
       params.append('limit', '15');
@@ -571,6 +588,7 @@ export default function HistorialPage() {
   const clearFilters = () => {
     setSelectedYear(currentYearStr);
     setSelectedMonth(currentMonthStr);
+    setSelectedDay('todos');
     setSelectedUser('');
     setStageFilter('');
     setResultFilter('');
@@ -702,13 +720,21 @@ export default function HistorialPage() {
           </h2>
         </div>
 
-        <div className="grid-3" style={{ alignItems: 'flex-end' }}>
-          <div className="field">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
+          {/* Año */}
+          <div className="field" style={{ width: 110, minWidth: 95, flexShrink: 0, marginBottom: 0 }}>
             <label>Año</label>
             <select
               value={selectedYear}
               onChange={(e) => {
-                setSelectedYear(e.target.value);
+                const newYr = e.target.value;
+                setSelectedYear(newYr);
+                if (selectedMonth !== 'todos' && selectedDay !== 'todos') {
+                  const maxD = new Date(parseInt(newYr, 10), parseInt(selectedMonth, 10), 0).getDate();
+                  if (parseInt(selectedDay, 10) > maxD) {
+                    setSelectedDay('todos');
+                  }
+                }
                 setJornadaPage(1);
                 setVisitPage(1);
               }}
@@ -721,12 +747,22 @@ export default function HistorialPage() {
             </select>
           </div>
 
-          <div className="field">
+          {/* Mes */}
+          <div className="field" style={{ width: 155, minWidth: 140, flexShrink: 0, marginBottom: 0 }}>
             <label>Mes</label>
             <select
               value={selectedMonth}
               onChange={(e) => {
-                setSelectedMonth(e.target.value);
+                const newMo = e.target.value;
+                setSelectedMonth(newMo);
+                if (newMo === 'todos') {
+                  setSelectedDay('todos');
+                } else if (selectedDay !== 'todos') {
+                  const maxD = new Date(parseInt(selectedYear, 10), parseInt(newMo, 10), 0).getDate();
+                  if (parseInt(selectedDay, 10) > maxD) {
+                    setSelectedDay('todos');
+                  }
+                }
                 setJornadaPage(1);
                 setVisitPage(1);
               }}
@@ -739,8 +775,31 @@ export default function HistorialPage() {
             </select>
           </div>
 
+          {/* Fecha / Día */}
+          <div className="field" style={{ width: 115, minWidth: 105, flexShrink: 0, marginBottom: 0 }}>
+            <label>Fecha</label>
+            <select
+              value={selectedDay}
+              disabled={selectedMonth === 'todos'}
+              title={selectedMonth === 'todos' ? 'Seleccione un mes para filtrar por día' : undefined}
+              onChange={(e) => {
+                setSelectedDay(e.target.value);
+                setJornadaPage(1);
+                setVisitPage(1);
+              }}
+            >
+              <option value="todos">-- Todos --</option>
+              {dayOptions.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Ejecutivo */}
           {isManager && (
-            <div className="field">
+            <div className="field" style={{ flex: '1 1 200px', minWidth: 180, marginBottom: 0 }}>
               <label>Ejecutivo/a</label>
               <select
                 value={selectedUser}
@@ -762,7 +821,7 @@ export default function HistorialPage() {
 
           {activeTab === 'visitas' && (
             <>
-              <div className="field">
+              <div className="field" style={{ flex: '1 1 180px', minWidth: 160, marginBottom: 0 }}>
                 <label>Etapa del Embudo</label>
                 <select
                   value={stageFilter}
@@ -780,7 +839,7 @@ export default function HistorialPage() {
                 </select>
               </div>
 
-              <div className="field">
+              <div className="field" style={{ flex: '1 1 180px', minWidth: 160, marginBottom: 0 }}>
                 <label>Resultado Comercial</label>
                 <select
                   value={resultFilter}
@@ -801,11 +860,12 @@ export default function HistorialPage() {
             </>
           )}
 
-          <div className="field">
+          {/* Botón Limpiar filtros */}
+          <div className="field" style={{ flexShrink: 0, marginBottom: 0 }}>
             <button
               onClick={clearFilters}
-              className="btn btn-secondary w-full"
-              style={{ justifyContent: 'center' }}
+              className="btn btn-secondary"
+              style={{ height: 42, padding: '0 18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               Limpiar filtros
             </button>
@@ -818,7 +878,13 @@ export default function HistorialPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
           <div>
             <h2 style={{ fontSize: '1.05rem', color: 'var(--ink)', fontWeight: 800, margin: 0 }}>
-              Resumen de Cierre · {selectedMonth === 'todos' ? `Año ${selectedYear}` : `${MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} ${selectedYear}`}
+              Resumen de Cierre · {
+                selectedMonth === 'todos'
+                  ? `Año ${selectedYear}`
+                  : selectedDay !== 'todos'
+                    ? `${selectedDay} de ${MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} de ${selectedYear}`
+                    : `${MONTH_OPTIONS.find((m) => m.value === selectedMonth)?.label} ${selectedYear}`
+              }
             </h2>
             <p className="muted" style={{ fontSize: '0.82rem', margin: '3px 0 0' }}>
               {selectedUser
@@ -832,14 +898,14 @@ export default function HistorialPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
           {/* 1. Jornadas */}
-          <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--line-light)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--primary)', marginBottom: 6 }}>
+          <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '16px 14px', border: '1px solid var(--line-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: 'var(--primary)', marginBottom: 6 }}>
               <Calendar size={16} />
               <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-muted)' }}>
                 Jornadas
               </span>
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.1 }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.1 }}>
               {loadingKpis ? '...' : (periodKpis?.total_jornadas || 0)}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 4 }}>
@@ -848,14 +914,14 @@ export default function HistorialPage() {
           </div>
 
           {/* 2. Km Recorridos */}
-          <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--line-light)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--primary)', marginBottom: 6 }}>
+          <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '16px 14px', border: '1px solid var(--line-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: 'var(--primary)', marginBottom: 6 }}>
               <Car size={16} />
               <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-muted)' }}>
                 Km Recorridos
               </span>
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--primary-dark)', lineHeight: 1.1 }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--primary-dark)', lineHeight: 1.1 }}>
               {loadingKpis ? '...' : formatThousands(periodKpis?.total_km || 0)}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 4 }}>
@@ -864,14 +930,14 @@ export default function HistorialPage() {
           </div>
 
           {/* 3. Total Visitas */}
-          <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--line-light)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--primary)', marginBottom: 6 }}>
+          <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '16px 14px', border: '1px solid var(--line-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: 'var(--primary)', marginBottom: 6 }}>
               <TrendingUp size={16} />
               <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-muted)' }}>
                 Total Visitas
               </span>
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.1 }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.1 }}>
               {loadingKpis ? '...' : (periodKpis?.total_visitas || 0)}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 4 }}>
@@ -880,14 +946,14 @@ export default function HistorialPage() {
           </div>
 
           {/* 4. Empresas Distintas */}
-          <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--line-light)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: 'var(--primary)', marginBottom: 6 }}>
+          <div style={{ background: 'var(--bg-subtle)', borderRadius: 10, padding: '16px 14px', border: '1px solid var(--line-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: 'var(--primary)', marginBottom: 6 }}>
               <Building2 size={16} />
               <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--ink-muted)' }}>
                 Empresas Distintas
               </span>
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.1 }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.1 }}>
               {loadingKpis ? '...' : (periodKpis?.empresas_distintas || 0)}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 4 }}>
@@ -896,14 +962,14 @@ export default function HistorialPage() {
           </div>
 
           {/* 5. Contrataciones */}
-          <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '14px 16px', border: '1px solid #BBF7D0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, color: '#16A34A', marginBottom: 6 }}>
+          <div style={{ background: '#F0FDF4', borderRadius: 10, padding: '16px 14px', border: '1px solid #BBF7D0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, color: '#16A34A', marginBottom: 6 }}>
               <FileCheck size={16} />
               <span style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#15803D' }}>
                 Contrataciones
               </span>
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#15803D', lineHeight: 1.1 }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#15803D', lineHeight: 1.1 }}>
               {loadingKpis ? '...' : (periodKpis?.contrataciones || 0)}
             </div>
             <div style={{ fontSize: '0.75rem', color: '#166534', marginTop: 4 }}>
