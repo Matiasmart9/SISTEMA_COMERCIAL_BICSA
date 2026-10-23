@@ -2287,5 +2287,12 @@ input[type="password"]::-ms-clear {
   }
 }
 
+#km-inicial-input:focus,
+#input-combustible-inicio:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(234, 72, 0, 0.14) !important;
+  outline: none !important;
+}
+
 
 

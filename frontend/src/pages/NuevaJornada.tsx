@@ -1991,7 +1991,7 @@ export default function NuevaJornadaPage() {
                 </h3>
               </div>
 
-              <div className="field" style={{ maxWidth: 200, marginBottom: 14 }}>
+              <div className="field" style={{ maxWidth: 240, marginBottom: 14 }}>
                 <label htmlFor="km-inicial-input" style={{ fontWeight: 700, fontSize: '0.86rem' }}>
                   Km Inicial (Salida) *
                 </label>
@@ -2002,7 +2002,17 @@ export default function NuevaJornadaPage() {
                     placeholder="Ingresa KM"
                     value={kmStart}
                     onChange={(e) => setKmStart(formatThousands(e.target.value))}
-                    style={{ height: 40, paddingRight: 40, fontWeight: 800, fontSize: '1rem' }}
+                    style={{
+                      height: 42,
+                      width: '100%',
+                      paddingRight: 45,
+                      fontWeight: 800,
+                      fontSize: '1.05rem',
+                      border: '1.5px solid var(--line)',
+                      borderRadius: 'var(--radius-md)',
+                      background: '#FFFFFF',
+                      boxSizing: 'border-box',
+                    }}
                     required
                   />
                   <span
@@ -2012,7 +2022,7 @@ export default function NuevaJornadaPage() {
                       top: '50%',
                       transform: 'translateY(-50%)',
                       fontSize: '0.82rem',
-                      fontWeight: 700,
+                      fontWeight: 800,
                       color: 'var(--ink-muted)',
                       pointerEvents: 'none',
                     }}
@@ -2101,8 +2111,8 @@ export default function NuevaJornadaPage() {
                   Indique el monto cargado para su recorrido, o seleccione la opción de postergar la carga al finalizar el día.
                 </p>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <div style={{ position: 'relative', width: 200 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{ position: 'relative', width: 240, maxWidth: '100%' }}>
                     <input
                       id="input-combustible-inicio"
                       type="text"
@@ -2111,16 +2121,22 @@ export default function NuevaJornadaPage() {
                       disabled={fuelPendingAtStart}
                       onChange={(e) => setFuelAmountGs(formatThousands(e.target.value))}
                       style={{
-                        height: 40,
-                        paddingRight: 42,
+                        height: 42,
+                        width: '100%',
+                        paddingRight: 45,
+                        paddingLeft: 14,
                         fontWeight: 800,
-                        fontSize: '1rem',
-                        background: fuelPendingAtStart ? '#F1F5F9' : '#FFFFFF',
-                        opacity: fuelPendingAtStart ? 0.65 : 1,
+                        fontSize: '1.05rem',
+                        border: '1.5px solid var(--line)',
+                        borderRadius: 'var(--radius-md)',
+                        background: fuelPendingAtStart ? '#F8FAFC' : '#FFFFFF',
+                        color: fuelPendingAtStart ? 'var(--ink-muted)' : 'var(--ink)',
+                        boxSizing: 'border-box',
+                        transition: 'all 0.2s ease',
                       }}
                       required={!fuelPendingAtStart}
                     />
-                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '0.82rem', fontWeight: 700, color: 'var(--ink-muted)', pointerEvents: 'none' }}>
+                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '0.82rem', fontWeight: 800, color: 'var(--ink-muted)', pointerEvents: 'none' }}>
                       Gs.
                     </span>
                   </div>
@@ -2132,11 +2148,11 @@ export default function NuevaJornadaPage() {
                       alignItems: 'center',
                       gap: 8,
                       cursor: 'pointer',
-                      fontSize: '0.84rem',
+                      fontSize: '0.85rem',
                       fontWeight: 600,
                       color: fuelPendingAtStart ? 'var(--primary-dark)' : 'var(--ink)',
                       background: fuelPendingAtStart ? '#FFF7ED' : '#F8FAFC',
-                      padding: '9px 14px',
+                      padding: '8px 14px',
                       borderRadius: 'var(--radius-md)',
                       border: fuelPendingAtStart ? '1.5px solid var(--primary)' : '1px solid var(--line)',
                       userSelect: 'none',
@@ -2153,7 +2169,7 @@ export default function NuevaJornadaPage() {
                       }}
                       style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
                     />
-                    <span>Agregar al Finalizar Jornada (aún no realicé la carga)</span>
+                    <span>Agregar al finalizar jornada</span>
                   </label>
                 </div>
               </div>
