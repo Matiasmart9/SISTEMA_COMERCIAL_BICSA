@@ -1281,38 +1281,13 @@ export default function NuevaJornadaPage() {
       )}
 
         {/* BARRA INFERIOR FLOTANTE PARA FINALIZAR JORNADA */}
-        <div
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 'var(--sidebar-width)',
-            right: 0,
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-            borderTop: '1.5px solid var(--line)',
-            padding: '14px 32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            zIndex: 30,
-            boxShadow: '0 -4px 16px rgba(0,0,0,0.06)',
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <span
-              style={{
-                background: '#ECFDF5',
-                color: '#059669',
-                border: '1px solid #A7F3D0',
-                padding: '4px 12px',
-                borderRadius: 9999,
-                fontWeight: 800,
-                fontSize: '0.8rem',
-              }}
-            >
-              🟢 Jornada abierta
+        <div className="jornada-floating-bottom-bar">
+          <div className="jornada-floating-bar-info">
+            <span className="jornada-floating-status-pill">
+              <span className="status-dot-pulse" />
+              Jornada abierta
             </span>
-            <span style={{ fontSize: '0.88rem', color: 'var(--ink)', fontWeight: 600 }}>
+            <span className="jornada-floating-bar-text">
               {activeJornada.visits.length} {activeJornada.visits.length === 1 ? 'visita guardada' : 'visitas guardadas'} hoy
             </span>
           </div>
@@ -1320,16 +1295,8 @@ export default function NuevaJornadaPage() {
           <button
             id="btn-finalizar-jornada-bottom"
             type="button"
-            className="btn btn-primary"
+            className="btn btn-primary btn-finalizar-jornada"
             onClick={openCloseModal}
-            style={{
-              background: 'linear-gradient(135deg, #EA4800 0%, #C2410C 100%)',
-              borderColor: '#C2410C',
-              padding: '10px 24px',
-              fontWeight: 800,
-              fontSize: '0.95rem',
-              boxShadow: '0 4px 14px rgba(234, 72, 0, 0.35)',
-            }}
           >
             <Flag size={17} />
             <span>Finalizar y Cerrar Jornada</span>
@@ -1865,14 +1832,14 @@ export default function NuevaJornadaPage() {
                   />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <div className="close-jornada-modal-actions">
                   <button
                     type="button"
                     className="btn btn-secondary"
                     onClick={() => setShowCloseModal(false)}
                     disabled={closingJornada}
                   >
-                    Seguir en curso (Volver)
+                    Volver atrás
                   </button>
                   <button
                     id="btn-confirmar-cierre"
@@ -2215,7 +2182,7 @@ export default function NuevaJornadaPage() {
           </div>
 
           {/* Botón Iniciar Día */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="iniciar-jornada-btn-wrapper">
             <button
               id="btn-iniciar-jornada"
               type="submit"

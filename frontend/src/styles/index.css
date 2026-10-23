@@ -1563,7 +1563,7 @@ input[type="password"]::-ms-clear {
 }
 
 /* ============================================================
-   V1.2: NOTIFICACIÓN PENDIENTE SIDEBAR Y FLUJO DE JORNADA
+   V1.3: NOTIFICACIÓN PENDIENTE SIDEBAR Y FLUJO DE JORNADA
    ============================================================ */
 
 .sidebar-pending-badge {
@@ -2102,6 +2102,172 @@ input[type="password"]::-ms-clear {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+/* ─── Botón Iniciar Jornada Responsivo ─── */
+.iniciar-jornada-btn-wrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .iniciar-jornada-btn-wrapper {
+    justify-content: center !important;
+  }
+  .iniciar-jornada-btn-wrapper button {
+    width: 100%;
+    max-width: 380px;
+    justify-content: center;
+  }
+}
+
+/* ─── Barra Inferior Flotante Jornada Abierta ─── */
+.jornada-floating-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1.5px solid var(--line);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 30;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.jornada-floating-bar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jornada-floating-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #ECFDF5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.status-dot-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-status-green 2s infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-status-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.jornada-floating-bar-text {
+  font-size: 0.88rem;
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-finalizar-jornada {
+  background: linear-gradient(135deg, #EA4800 0%, #C2410C 100%);
+  border-color: #C2410C;
+  padding: 10px 24px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 14px rgba(234, 72, 0, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .jornada-floating-bottom-bar {
+    left: 0 !important;
+    padding: 10px 16px;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .jornada-floating-bottom-bar {
+    left: 0 !important;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .jornada-floating-bar-info {
+    gap: 8px;
+  }
+  .jornada-floating-status-pill {
+    padding: 4px 10px;
+    font-size: 0.76rem;
+  }
+  .jornada-floating-bar-text {
+    font-size: 0.8rem;
+  }
+  .btn-finalizar-jornada {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .jornada-floating-bottom-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .jornada-floating-bar-info {
+    justify-content: space-between;
+  }
+  .btn-finalizar-jornada {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ─── Botones del Modal de Confirmación de Cierre de Jornada ─── */
+.close-jornada-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (max-width: 600px) {
+  .close-jornada-modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .close-jornada-modal-actions button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 
