@@ -36,6 +36,7 @@ import { useAuth } from '../context/AuthContext';
 import { formatThousands, parseThousands, formatKm, formatGs, formatDate } from '../utils/formatters';
 import { compressImageFile } from '../utils/imageCompression';
 import { DEPARTAMENTOS_PARAGUAY, getCiudadesPorDepartamento } from '../data/paraguayLocations';
+import { CarFrontCustomIcon, GoogleMapsPinCustomIcon } from '../components/MobilityIcons';
 
 interface CompanySuggestion {
   id: string;
@@ -597,7 +598,7 @@ export default function NuevaJornadaPage() {
             <div className="active-jornada-stat-item">
               <span className="active-jornada-stat-label">Medio de Movilidad</span>
               <span className="active-jornada-stat-value flex items-center gap-2">
-                {isPropia ? <Car size={18} color="#FDBA74" /> : <Smartphone size={18} color="#93C5FD" />}
+                {isPropia ? <CarFrontCustomIcon size={20} color="#FDBA74" /> : <GoogleMapsPinCustomIcon size={20} />}
                 {isPropia ? 'Vehículo Propio' : 'Plataforma de Transporte'}
               </span>
             </div>
@@ -1953,8 +1954,8 @@ export default function NuevaJornadaPage() {
                 className={`mobility-card-option ${mobilityType === 'propia' ? 'selected' : ''}`}
                 onClick={() => setMobilityType('propia')}
               >
-                <div className="mobility-card-icon">
-                  <Car size={24} />
+                <div className="mobility-card-icon is-propia">
+                  <CarFrontCustomIcon size={28} color={mobilityType === 'propia' ? '#FFFFFF' : '#475569'} />
                 </div>
                 <div className="mobility-card-body">
                   <div className="mobility-card-title">Movilidad Propia</div>
@@ -1968,8 +1969,8 @@ export default function NuevaJornadaPage() {
                 className={`mobility-card-option ${mobilityType === 'plataforma' ? 'selected' : ''}`}
                 onClick={() => setMobilityType('plataforma')}
               >
-                <div className="mobility-card-icon">
-                  <Smartphone size={24} />
+                <div className="mobility-card-icon is-maps">
+                  <GoogleMapsPinCustomIcon size={28} />
                 </div>
                 <div className="mobility-card-body">
                   <div className="mobility-card-title">Plataforma de Transporte</div>

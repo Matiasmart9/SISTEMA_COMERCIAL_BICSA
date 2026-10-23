@@ -1653,8 +1653,8 @@ input[type="password"]::-ms-clear {
 }
 
 .mobility-card-icon {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -1663,11 +1663,31 @@ input[type="password"]::-ms-clear {
   background: #F1F5F9;
   color: var(--ink);
   transition: all 0.2s ease;
+  border: 1px solid var(--line);
 }
 
-.mobility-card-option.selected .mobility-card-icon {
-  background: var(--primary);
+.mobility-card-icon.is-propia {
+  background: #F8FAFC;
+  color: #334155;
+}
+
+.mobility-card-option.selected .mobility-card-icon.is-propia {
+  background: linear-gradient(135deg, #FF6000 0%, #EA4800 100%);
   color: #FFFFFF;
+  border-color: #EA4800;
+  box-shadow: 0 4px 12px rgba(234, 72, 0, 0.28);
+}
+
+.mobility-card-icon.is-maps {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.mobility-card-option.selected .mobility-card-icon.is-maps {
+  background: #FFFFFF;
+  border-color: #FDBA74;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .mobility-card-body {
