@@ -27,7 +27,8 @@ export default function ExportacionPage() {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
-  const years = Array.from({ length: currentYear - 2024 + 1 }, (_, i) => currentYear - i);
+  const startYear = 2026;
+  const years = Array.from({ length: Math.max(1, currentYear - startYear + 1) }, (_, i) => currentYear - i);
   const [year, setYear] = useState<string>('');
   const [month, setMonth] = useState<string>('');
   const [selectedUser, setSelectedUser] = useState<string>('');

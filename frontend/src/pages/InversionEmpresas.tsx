@@ -106,8 +106,14 @@ export default function InversionEmpresasPage() {
   const { user } = useAuth();
 
   const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const startYear = 2026;
+  const availableYears = Array.from(
+    { length: Math.max(1, currentYear - startYear + 1) },
+    (_, i) => currentYear - i
+  );
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'empresas' | 'visitas'>('empresas');
@@ -309,7 +315,7 @@ export default function InversionEmpresasPage() {
                 cursor: 'pointer',
               }}
             >
-              {[2025, 2026, 2027, 2028].map((y) => (
+              {availableYears.map((y) => (
                 <option key={y} value={y}>
                   {y}
                 </option>
