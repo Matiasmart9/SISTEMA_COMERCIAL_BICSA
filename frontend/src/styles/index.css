@@ -2270,4 +2270,22 @@ input[type="password"]::-ms-clear {
   }
 }
 
+/* ─── Tarjeta de Movilidad Propia (Km y Combustible inicial) ─── */
+.mobility-propia-card {
+  background: #FFFFFF;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 640px) {
+  .mobility-propia-card {
+    padding: 16px 14px;
+  }
+}
+
+
 

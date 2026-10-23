@@ -1390,11 +1390,12 @@ export default function NuevaJornadaPage() {
                         <input
                           id="modal-km-final"
                           type="text"
-                          placeholder="Ej. 42.382"
+                          placeholder="Ingresa KM final"
                           value={closeKmEnd}
                           onChange={(e) => setCloseKmEnd(formatThousands(e.target.value))}
                           style={{
                             height: 40,
+                            maxWidth: 200,
                             fontWeight: 800,
                             fontSize: '1.05rem',
                             borderColor: isDiffInvalid ? '#DC2626' : undefined,
@@ -1485,8 +1486,8 @@ export default function NuevaJornadaPage() {
                         style={{
                           display: 'flex',
                           alignItems: 'stretch',
-                          maxWidth: 300,
-                          height: 42,
+                          maxWidth: 200,
+                          height: 40,
                           background: '#FFFFFF',
                           border: (!closeFuelAmount || parseThousands(closeFuelAmount) <= 0)
                             ? '1.5px solid #DC2626'
@@ -1499,7 +1500,7 @@ export default function NuevaJornadaPage() {
                         <input
                           id="modal-combustible"
                           type="text"
-                          placeholder="Ej. 120.000"
+                          placeholder="Ingresa monto"
                           value={closeFuelAmount}
                           onChange={(e) => setCloseFuelAmount(formatThousands(e.target.value))}
                           style={{
@@ -1982,34 +1983,26 @@ export default function NuevaJornadaPage() {
 
           {/* SI ELIGE MOVILIDAD PROPIA */}
           {mobilityType === 'propia' && (
-            <div
-              style={{
-                background: '#FFF7ED',
-                border: '1.5px solid #FDBA74',
-                borderRadius: 'var(--radius-lg)',
-                padding: 20,
-                marginBottom: 20,
-              }}
-            >
+            <div className="mobility-propia-card">
               <div className="flex items-center gap-2 mb-3">
                 <Gauge size={18} color="var(--primary)" />
-                <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--primary-dark)' }}>
+                <h3 style={{ fontSize: '0.98rem', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
                   Kilometraje Inicial de Salida
                 </h3>
               </div>
 
-              <div className="field" style={{ maxWidth: 300, marginBottom: 14 }}>
-                <label htmlFor="km-inicial-input" style={{ fontWeight: 700 }}>
+              <div className="field" style={{ maxWidth: 200, marginBottom: 14 }}>
+                <label htmlFor="km-inicial-input" style={{ fontWeight: 700, fontSize: '0.86rem' }}>
                   Km Inicial (Salida) *
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     id="km-inicial-input"
                     type="text"
-                    placeholder="Ej. 42.310"
+                    placeholder="Ingresa KM"
                     value={kmStart}
                     onChange={(e) => setKmStart(formatThousands(e.target.value))}
-                    style={{ height: 42, paddingRight: 40, fontWeight: 800, fontSize: '1.05rem' }}
+                    style={{ height: 40, paddingRight: 40, fontWeight: 800, fontSize: '1rem' }}
                     required
                   />
                   <span
@@ -2018,7 +2011,7 @@ export default function NuevaJornadaPage() {
                       right: 12,
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       fontWeight: 700,
                       color: 'var(--ink-muted)',
                       pointerEvents: 'none',
@@ -2065,9 +2058,10 @@ export default function NuevaJornadaPage() {
                         gap: 6,
                         padding: 16,
                         background: '#FFFFFF',
-                        border: photoStartError ? '2px dashed #DC2626' : '1.5px dashed #FDBA74',
+                        border: photoStartError ? '2px dashed #DC2626' : '1.5px dashed var(--line)',
                         borderRadius: 'var(--radius-md)',
                         cursor: 'pointer',
+                        transition: 'border-color 0.2s',
                       }}
                     >
                       <input
@@ -2096,29 +2090,29 @@ export default function NuevaJornadaPage() {
               )}
 
               {/* CARGA DE COMBUSTIBLE AL INICIAR JORNADA */}
-              <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1.5px dashed #FDBA74' }}>
-                <div className="flex items-center gap-2 mb-2">
+              <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                <div className="flex items-center gap-2 mb-1">
                   <DollarSign size={18} color="var(--primary)" />
-                  <label htmlFor="input-combustible-inicio" style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--primary-dark)', margin: 0 }}>
+                  <label htmlFor="input-combustible-inicio" style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--ink)', margin: 0 }}>
                     Combustible Cargado para la Jornada {!fuelPendingAtStart && '*'}
                   </label>
                 </div>
-                <p className="muted" style={{ fontSize: '0.8rem', margin: '0 0 10px' }}>
+                <p className="muted" style={{ fontSize: '0.8rem', margin: '0 0 12px' }}>
                   Indique el monto cargado para su recorrido, o seleccione la opción de postergar la carga al finalizar el día.
                 </p>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                  <div style={{ position: 'relative', width: 220 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ position: 'relative', width: 200 }}>
                     <input
                       id="input-combustible-inicio"
                       type="text"
-                      placeholder={fuelPendingAtStart ? "Se cargará al finalizar" : "Ej. 120.000"}
+                      placeholder={fuelPendingAtStart ? "Se cargará al finalizar" : "Ingresa monto"}
                       value={fuelAmountGs}
                       disabled={fuelPendingAtStart}
                       onChange={(e) => setFuelAmountGs(formatThousands(e.target.value))}
                       style={{
-                        height: 42,
-                        paddingRight: 45,
+                        height: 40,
+                        paddingRight: 42,
                         fontWeight: 800,
                         fontSize: '1rem',
                         background: fuelPendingAtStart ? '#F1F5F9' : '#FFFFFF',
@@ -2134,19 +2128,19 @@ export default function NuevaJornadaPage() {
                   <label
                     htmlFor="fuel-pending-check"
                     style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: 8,
                       cursor: 'pointer',
-                      fontSize: '0.86rem',
-                      fontWeight: 700,
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
                       color: fuelPendingAtStart ? 'var(--primary-dark)' : 'var(--ink)',
-                      background: fuelPendingAtStart ? '#FED7AA' : '#FFFFFF',
-                      padding: '10px 14px',
+                      background: fuelPendingAtStart ? '#FFF7ED' : '#F8FAFC',
+                      padding: '9px 14px',
                       borderRadius: 'var(--radius-md)',
-                      border: '1.5px solid #FDBA74',
+                      border: fuelPendingAtStart ? '1.5px solid var(--primary)' : '1px solid var(--line)',
                       userSelect: 'none',
-                      transition: 'all 0.2s',
+                      transition: 'all 0.15s ease',
                     }}
                   >
                     <input
@@ -2157,7 +2151,7 @@ export default function NuevaJornadaPage() {
                         setFuelPendingAtStart(e.target.checked);
                         if (e.target.checked) setFuelAmountGs('');
                       }}
-                      style={{ width: 18, height: 18, accentColor: 'var(--primary)', cursor: 'pointer' }}
+                      style={{ width: 16, height: 16, accentColor: 'var(--primary)', cursor: 'pointer' }}
                     />
                     <span>Agregar al Finalizar Jornada (aún no realicé la carga)</span>
                   </label>
