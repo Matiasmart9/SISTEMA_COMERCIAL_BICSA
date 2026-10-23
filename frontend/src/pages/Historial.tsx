@@ -799,7 +799,7 @@ export default function HistorialPage() {
 
           {/* Ejecutivo */}
           {isManager && (
-            <div className="field" style={{ flex: '1 1 200px', minWidth: 180, marginBottom: 0 }}>
+            <div className="field" style={{ width: 220, minWidth: 170, flexShrink: 0, marginBottom: 0 }}>
               <label>Ejecutivo/a</label>
               <select
                 value={selectedUser}
@@ -821,7 +821,7 @@ export default function HistorialPage() {
 
           {activeTab === 'visitas' && (
             <>
-              <div className="field" style={{ flex: '1 1 180px', minWidth: 160, marginBottom: 0 }}>
+              <div className="field" style={{ width: 210, minWidth: 170, flexShrink: 0, marginBottom: 0 }}>
                 <label>Etapa del Embudo</label>
                 <select
                   value={stageFilter}
@@ -839,7 +839,7 @@ export default function HistorialPage() {
                 </select>
               </div>
 
-              <div className="field" style={{ flex: '1 1 180px', minWidth: 160, marginBottom: 0 }}>
+              <div className="field" style={{ width: 180, minWidth: 150, flexShrink: 0, marginBottom: 0 }}>
                 <label>Resultado Comercial</label>
                 <select
                   value={resultFilter}
