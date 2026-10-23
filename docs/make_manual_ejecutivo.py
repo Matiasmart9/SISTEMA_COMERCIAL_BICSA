@@ -1,0 +1,745 @@
+# -*- coding: utf-8 -*-
+"""
+Generador del Manual de Usuario - Perfil Ejecutivo Comercial - BICSA V1.3
+"""
+
+import os
+import subprocess
+
+DOCS_DIR = os.path.dirname(os.path.abspath(__file__))
+HTML_FILE = os.path.join(DOCS_DIR, "MANUAL_USUARIO_EJECUTIVO_BICSA.html")
+PDF_FILE = os.path.join(DOCS_DIR, "MANUAL_USUARIO_EJECUTIVO_BICSA.pdf")
+EDGE_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+if not os.path.exists(EDGE_PATH):
+    EDGE_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+HTML_CONTENT = """<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Manual de Usuario - Ejecutivo Comercial - BICSA V1.3</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 16mm 18mm 18mm 18mm;
+      @bottom-left {
+        content: "BICSA S.A. | Manual de Usuario - Perfil Ejecutivo Comercial V1.3";
+        font-size: 8pt;
+        color: #94A3B8;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+      }
+      @bottom-right {
+        content: "Página " counter(page);
+        font-size: 8pt;
+        color: #64748B;
+        font-weight: bold;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+      }
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #1E293B;
+      line-height: 1.55;
+      font-size: 9.5pt;
+      margin: 0;
+      padding: 0;
+    }
+    .cover {
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100vh;
+      box-sizing: border-box;
+      padding: 20mm 10mm 10mm 10mm;
+    }
+    .cover-top {
+      border-top: 6px solid #FF6000;
+      padding-top: 30px;
+    }
+    .cover-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 26pt;
+      font-weight: 900;
+      color: #0F172A;
+      letter-spacing: -0.02em;
+    }
+    .cover-brand span.orange { color: #FF6000; }
+    .cover-badge {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 6px 14px;
+      background: #FFF7ED;
+      color: #EA4800;
+      border: 1px solid #FFEDD5;
+      border-radius: 9999px;
+      font-weight: 800;
+      font-size: 9pt;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .cover-title {
+      font-size: 28pt;
+      font-weight: 800;
+      color: #0F172A;
+      line-height: 1.15;
+      margin: 25px 0 10px 0;
+    }
+    .cover-subtitle {
+      font-size: 13pt;
+      color: #475569;
+      font-weight: 400;
+      line-height: 1.4;
+      max-width: 600px;
+    }
+    .cover-meta {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .meta-item { display: flex; flex-direction: column; }
+    .meta-label {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748B;
+      letter-spacing: 0.04em;
+    }
+    .meta-value {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #0F172A;
+      margin-top: 2px;
+    }
+    .cover-footer {
+      border-top: 1px solid #E2E8F0;
+      padding-top: 14px;
+      font-size: 8pt;
+      color: #94A3B8;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .toc {
+      page-break-after: always;
+      padding-top: 10px;
+    }
+    .toc-title {
+      font-size: 18pt;
+      font-weight: 800;
+      color: #0F172A;
+      border-bottom: 2px solid #FF6000;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+    }
+    .toc-list { list-style: none; padding: 0; margin: 0; }
+    .toc-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 0;
+      border-bottom: 1px dotted #CBD5E1;
+      font-size: 9.5pt;
+    }
+    .toc-item span.num {
+      font-weight: 700;
+      color: #FF6000;
+      margin-right: 8px;
+      width: 20px;
+      display: inline-block;
+    }
+    .toc-item span.name { font-weight: 600; color: #1E293B; flex: 1; }
+    .toc-item span.page { font-weight: 700; color: #64748B; }
+
+    h1 {
+      font-size: 16pt;
+      font-weight: 800;
+      color: #0F172A;
+      border-left: 5px solid #FF6000;
+      padding-left: 10px;
+      margin: 26px 0 12px 0;
+      page-break-after: avoid;
+    }
+    h2 {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #1E293B;
+      margin: 18px 0 8px 0;
+      border-bottom: 1px solid #E2E8F0;
+      padding-bottom: 4px;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: #334155;
+      margin: 12px 0 6px 0;
+      page-break-after: avoid;
+    }
+    p { margin: 0 0 10px 0; color: #334155; text-align: justify; }
+    ul, ol { margin: 0 0 12px 0; padding-left: 22px; color: #334155; }
+    li { margin-bottom: 4px; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-size: 9pt;
+      page-break-inside: avoid;
+    }
+    .callout-info { background: #EFF6FF; border-left: 4px solid #3B82F6; color: #1E40AF; }
+    .callout-warn { background: #FFFBEB; border-left: 4px solid #F59E0B; color: #92400E; }
+    .callout-tip { background: #ECFDF5; border-left: 4px solid #10B981; color: #065F46; }
+    .callout-bicsa { background: #FFF7ED; border-left: 4px solid #FF6000; color: #9A3412; }
+    .callout-title { font-weight: 800; font-size: 9.5pt; margin-bottom: 4px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+    th {
+      background: #0F172A;
+      color: #FFFFFF;
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+      border: 1px solid #1E293B;
+    }
+    td {
+      padding: 7px 10px;
+      border: 1px solid #E2E8F0;
+      color: #334155;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #F8FAFC; }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pill-green { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0; }
+    .pill-orange { background: #FFEDD5; color: #C2410C; border: 1px solid #FED7AA; }
+    .pill-blue { background: #DBEAFE; color: #1D4ED8; border: 1px solid #BFDBFE; }
+    .pill-red { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA; }
+    .pill-gray { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+
+    .step-card {
+      display: flex;
+      gap: 12px;
+      margin: 12px 0;
+      page-break-inside: avoid;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #FF6000;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 10pt;
+      flex-shrink: 0;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { color: #0F172A; }
+
+    .card-kpi-preview {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      display: inline-block;
+      width: 140px;
+      margin: 4px;
+    }
+    .kpi-title { font-size: 7pt; font-weight: 700; color: #64748B; text-transform: uppercase; }
+    .kpi-value { font-size: 14pt; font-weight: 800; color: #FF6000; margin: 4px 0; }
+    .kpi-sub { font-size: 6.5pt; color: #94A3B8; }
+
+    .page-break { page-break-after: always; }
+  </style>
+</head>
+<body>
+
+  <!-- PORTADA -->
+  <div class="cover">
+    <div class="cover-top">
+      <div class="cover-brand">
+        <span>bicsa</span><span class="orange">.</span>
+      </div>
+      <div class="cover-badge">Manual Operativo de Usuario</div>
+      <div class="cover-title">Manual de Usuario: Perfil Ejecutivo Comercial</div>
+      <div class="cover-subtitle">
+        Guía paso a paso para el inicio de jornada, registro de odómetro y combustible, carga de visitas a empresas, seguimiento del embudo comercial, plataformas de transporte y cierre diario de actividades.
+      </div>
+
+      <div class="cover-meta">
+        <div class="meta-item">
+          <span class="meta-label">Perfil de Usuario</span>
+          <span class="meta-value">Ejecutivo/a Comercial (Comercial)</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Versión del Sistema</span>
+          <span class="meta-value">Release V1.3</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Dispositivos Compatibles</span>
+          <span class="meta-value">Smartphone (PWA Android / iOS) y Web PC</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Publicación</span>
+          <span class="meta-value">Octubre 2026 · BICSA S.A.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-footer">
+      <span>© 2026 BICSA S.A. | Uso exclusivo del equipo comercial</span>
+      <span>Asunción, Paraguay</span>
+    </div>
+  </div>
+
+  <!-- ÍNDICE -->
+  <div class="toc">
+    <div class="toc-title">Contenido del Manual</div>
+    <ul class="toc-list">
+      <li class="toc-item"><span class="num">1.</span><span class="name">Introducción y Propósito del Rol Comercial</span><span class="page">3</span></li>
+      <li class="toc-item"><span class="num">2.</span><span class="name">Acceso al Sistema e Instalación en el Smartphone (PWA)</span><span class="page">3</span></li>
+      <li class="toc-item"><span class="num">3.</span><span class="name">Navegación General de la Aplicación</span><span class="page">4</span></li>
+      <li class="toc-item"><span class="num">4.</span><span class="name">Inicio de Jornada Comercial (Paso a Paso)</span><span class="page">5</span></li>
+      <li class="toc-item"><span class="num">5.</span><span class="name">Registro y Gestión de Visitas a Empresas</span><span class="page">7</span></li>
+      <li class="toc-item"><span class="num">6.</span><span class="name">Finalización y Cierre de Jornada Diaria</span><span class="page">9</span></li>
+      <li class="toc-item"><span class="num">7.</span><span class="name">Consulta de Historial Personal y Resumen de Cierre</span><span class="page">10</span></li>
+      <li class="toc-item"><span class="num">8.</span><span class="name">Directorio de Empresas y Clientes</span><span class="page">11</span></li>
+      <li class="toc-item"><span class="num">9.</span><span class="name">Preguntas Frecuentes y Solución de Problemas</span><span class="page">12</span></li>
+    </ul>
+  </div>
+
+  <!-- SECCIÓN 1 -->
+  <h1>1. Introducción y Propósito del Rol Comercial</h1>
+  <p>
+    ¡Bienvenido al <strong>Sistema de Gestión Comercial BICSA</strong>! Esta herramienta fue diseñada para acompañarte en tu labor diaria en la calle y en reuniones corporativas. A través de ella podrás registrar tus salidas de campo de forma ágil, transparente y auditable, asegurando que cada visita, cada contacto con decisores y cada contrato ganado quede formalmente documentado para el reconocimiento de tu gestión y el reembolso exacto de tus gastos de movilidad.
+  </p>
+  <div class="callout callout-tip">
+    <div class="callout-title">Beneficios Clave para el Ejecutivo</div>
+    <ul>
+      <li><strong>Registro Inmediato:</strong> Carga de reuniones en menos de 1 minuto desde el teléfono celular.</li>
+      <li><strong>Cero Planillas Manuales:</strong> Cálculo automático de kilometraje, combustible y gastos de plataformas.</li>
+      <li><strong>Historial Transparente:</strong> Puedes consultar en cualquier momento todas tus visitas y metas alcanzadas.</li>
+    </ul>
+  </div>
+
+  <!-- SECCIÓN 2 -->
+  <h1>2. Acceso al Sistema e Instalación en el Smartphone (PWA)</h1>
+  <p>
+    El sistema es una <strong>Aplicación Web Progresiva (PWA)</strong>. No requiere descargarse desde Google Play o App Store, sino que se instala directamente desde el navegador de tu celular:
+  </p>
+
+  <h2>2.1. Instalación en Android (Google Chrome)</h2>
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      Abre el navegador Chrome en tu smartphone e ingresa a la dirección web provista por la empresa (ej. <code>http://[DOMINIO_BICSA]</code>).
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      Toca los tres puntos verticales en la esquina superior derecha y selecciona <strong>"Agregar a la pantalla principal"</strong> o <strong>"Instalar aplicación"</strong>.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      Se creará el ícono oficial de <strong>BICSA</strong> en tu pantalla de inicio, el cual abrirá la app en pantalla completa sin barras de navegador.
+    </div>
+  </div>
+
+  <h2>2.2. Instalación en iPhone (Safari)</h2>
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      Abre Safari, ingresa a la dirección del sistema y pulsa el botón <strong>Compartir</strong> (ícono de cuadrado con flecha hacia arriba).
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      Baja en las opciones y selecciona <strong>"Agregar a inicio"</strong>. Confirma el nombre y listo.
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 3 -->
+  <h1>3. Navegación General de la Aplicación</h1>
+  <p>
+    Al ingresar con tu correo institucional y contraseña, encontrarás la barra de navegación lateral (o menú inferior en teléfonos móviles):
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Módulo</th>
+        <th>Ícono</th>
+        <th>Función Principal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Resumen</strong></td>
+        <td>Cuadrícula</td>
+        <td>Tablero personal con tus visitas del mes, etapas de negociación y accesos rápidos.</td>
+      </tr>
+      <tr>
+        <td><strong>Nueva Jornada</strong></td>
+        <td>Más (+)</td>
+        <td>Pantalla principal operativa para iniciar el día, registrar visitas continuas y cerrar la jornada.</td>
+      </tr>
+      <tr>
+        <td><strong>Jornada en Curso</strong></td>
+        <td>Onda Señal</td>
+        <td>Acceso directo a la jornada activa de hoy si ya la has iniciado.</td>
+      </tr>
+      <tr>
+        <td><strong>Historial</strong></td>
+        <td>Reloj Histórico</td>
+        <td>Consulta de todas tus jornadas pasadas con filtros por año, mes y día exacto.</td>
+      </tr>
+      <tr>
+        <td><strong>Empresas</strong></td>
+        <td>Edificio</td>
+        <td>Directorio global de empresas para buscar clientes o consultar antecedentes.</td>
+      </tr>
+      <tr>
+        <td><strong>Cerrar sesión</strong></td>
+        <td>Flecha Salir</td>
+        <td>Cierra de forma segura tu sesión activa en el dispositivo.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECCIÓN 4 -->
+  <h1>4. Inicio de Jornada Comercial (Paso a Paso)</h1>
+  <p>
+    Cada día antes de iniciar tus recorridos o visitas comerciales, debes ingresar a <strong>"Nueva Jornada"</strong>. Solo puedes tener <strong>una única jornada abierta a la vez</strong>.
+  </p>
+
+  <h2>Paso 1: Elección del Medio de Movilidad</h2>
+  <p>El sistema te presentará dos tarjetas visuales con íconos dedicados:</p>
+
+  <div style="display: flex; gap: 14px; margin: 14px 0;">
+    <div style="flex: 1; border: 2px solid #FF6000; background: #FFF7ED; border-radius: 10px; padding: 12px;">
+      <div style="font-weight: 800; color: #EA4800; font-size: 11pt;">Movilidad Propia</div>
+      <p style="font-size: 8.5pt; margin: 4px 0 0; color: #7C2D12;">
+        Utilízalo si te desplazas en tu propio automóvil o motocicleta. Te solicitará odómetro inicial y final para el cálculo de kilometraje.
+      </p>
+    </div>
+    <div style="flex: 1; border: 1.5px solid #CBD5E1; background: #FFFFFF; border-radius: 10px; padding: 12px;">
+      <div style="font-weight: 800; color: #0F172A; font-size: 11pt;">Plataforma de Transporte</div>
+      <p style="font-size: 8.5pt; margin: 4px 0 0; color: #475569;">
+        Utilízalo si viajas en Bolt, Uber, MUV o Taxi. Los costos de los traslados se registran directamente con cada visita realizada.
+      </p>
+    </div>
+  </div>
+
+  <h2>Paso 2A: Si seleccionas "Movilidad Propia"</h2>
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Ingreso del Odómetro Inicial:</strong> Digita los kilómetros exactos que marca el tablero de tu vehículo al salir (ej. <code>12200</code>).
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Foto del Odómetro (si aplica):</strong> Si tu usuario tiene requerimiento de foto habilitado por gerencia, pulsa sobre la cámara y toma una foto nítida de los kilómetros del tablero.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Combustible del Día:</strong>
+      <ul>
+        <li>Si ya cargaste combustible al salir, ingresa el monto en Guaraníes (ej. <code>70000</code>).</li>
+        <li>Si vas a cargar durante el día o al finalizar, marca la opción <em>"Agregar al finalizar jornada"</em>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Paso 2B: Si seleccionas "Plataforma de Transporte"</h2>
+  <p>
+    No se solicita odómetro ni kilometraje. Simplemente pulsa el botón naranja <strong>"Iniciar Jornada Comercial"</strong> y el sistema te habilitará de inmediato la carga de tus visitas del día.
+  </p>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 5 -->
+  <h1>5. Registro y Gestión de Visitas a Empresas</h1>
+  <p>
+    Una vez iniciada la jornada, verás el panel <strong>"Jornada en Curso"</strong>. Aquí registrarás cada una de las visitas realizadas durante el día.
+  </p>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Selección o Alta de Empresa:</strong> Escribe el nombre de la empresa en el buscador predictivo.
+      <ul>
+        <li>Si la empresa ya existe en el directorio, selecciónala de la lista desplegable.</li>
+        <li>Si es un prospecto nuevo, presiona <strong>"+ Registrar nueva empresa"</strong> e ingresa su nombre.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Datos de Ubicación:</strong>
+      <ul>
+        <li><strong>Departamento:</strong> Selecciona el departamento de Paraguay (ej. <em>Central, Asunción, Alto Paraná</em>).</li>
+        <li><strong>Ciudad:</strong> Selecciona el municipio/distrito correspondiente.</li>
+        <li><strong>Zona / Dirección:</strong> Calle, barrio o referencia del local.</li>
+        <li><strong>Google Maps URL:</strong> Puedes pegar el enlace de ubicación de Google Maps para facilitar futuras visitas.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Definición Comercial de la Visita:</strong>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 30%;">Campo</th>
+            <th>Opciones Disponibles</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tipo de Visita</strong></td>
+            <td>Nueva visita · Prospecto en seguimiento · Cliente actual</td>
+          </tr>
+          <tr>
+            <td><strong>Motivo de Visita</strong></td>
+            <td>Prospección · Presentación de servicios · Seguimiento comercial · Negociación · Fidelización · Otro</td>
+          </tr>
+          <tr>
+            <td><strong>Etapa del Embudo</strong></td>
+            <td>
+              <span class="pill pill-blue">Prospección</span> &rarr;
+              <span class="pill pill-orange">Contacto con decisor</span> &rarr;
+              <span class="pill pill-orange">Negociación</span> &rarr;
+              <span class="pill pill-green">Contrato</span> &rarr;
+              <span class="pill pill-green">Venta ganada / Suscripción</span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Resultado Comercial</strong></td>
+            <td>
+              <span class="pill pill-orange">Pendiente</span> · 
+              <span class="pill pill-blue">Propuesta enviada</span> · 
+              <span class="pill pill-orange">En negociación</span> · 
+              <span class="pill pill-green">Contratado</span> · 
+              <span class="pill pill-red">Venta perdida</span> · 
+              <span class="pill pill-gray">Visita realizada</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong>Costo de Traslado (si usas Plataforma):</strong> Ingresa el importe exacto abonado por el viaje en Bolt/Uber hacia esa empresa (ej. <code>Gs. 35.000</code>).
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <strong>Notas y Acuerdos:</strong> Escribe un resumen de lo conversado: nombre del decisor, número de contacto, objeciones y fecha tentativa de cierre.
+    </div>
+  </div>
+
+  <div class="callout callout-bicsa">
+    <div class="callout-title">Guardar Visita</div>
+    Presiona <strong>"Guardar Visita"</strong>. La visita se sumará al contador de tu jornada. Puedes registrar tantas visitas como realices en el día.
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 6 -->
+  <h1>6. Finalización y Cierre de Jornada Diaria</h1>
+  <p>
+    Al terminar tu día de gestión comercial, <strong>es obligatorio cerrar formalmente tu jornada</strong> antes de las 00:00 hs.
+  </p>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      En la pantalla de tu jornada abierta, pulsa el botón naranja <strong>"Finalizar y Cerrar Jornada"</strong>.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Si utilizaste Movilidad Propia:</strong>
+      <ul>
+        <li>Ingresa el <strong>Odómetro Final</strong> del vehículo (debe ser mayor o igual al inicial). El sistema te mostrará automáticamente los <em>KM Recorridos Auditables</em>.</li>
+        <li>Si tenías pendiente el combustible, ingresa el monto total cargado durante el día (ej. <code>Gs. 100.000</code>).</li>
+        <li>Si no realizaste ninguna carga de combustible, marca la casilla correspondiente.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Gastos Extras del Día:</strong> Si incurriste en peajes, estacionamiento medido u otros gastos operativos, regístralos en la sección de gastos extras con su respectivo concepto y monto.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <strong>Confirmación Final:</strong> Revisa el resumen en pantalla y pulsa <strong>"Confirmar Cierre de Jornada"</strong>.
+    </div>
+  </div>
+
+  <div class="callout callout-warn">
+    <div class="callout-title">Atención con el Cierre Definitivo</div>
+    Una vez cerrada la jornada, queda bloqueada para edición directa del ejecutivo para garantizar la inmutabilidad de la auditoría. Si requieres corregir un kilometraje o agregar una visita olvidada, deberás solicitarlo al Administrador.
+  </div>
+
+  <!-- SECCIÓN 7 -->
+  <h1>7. Consulta de Historial Personal y Resumen de Cierre</h1>
+  <p>
+    En el menú <strong>"Historial"</strong> podrás auditar tus salidas y medir tu propio rendimiento mediante las tarjetas de KPIs:
+  </p>
+
+  <div style="text-align: center; margin: 15px 0;">
+    <div class="card-kpi-preview">
+      <div class="kpi-title">Jornadas</div>
+      <div class="kpi-value">21</div>
+      <div class="kpi-sub">Días de salida</div>
+    </div>
+    <div class="card-kpi-preview">
+      <div class="kpi-title">KM Recorridos</div>
+      <div class="kpi-value">2.129</div>
+      <div class="kpi-sub">Auditables</div>
+    </div>
+    <div class="card-kpi-preview">
+      <div class="kpi-title">Total Visitas</div>
+      <div class="kpi-value">30</div>
+      <div class="kpi-sub">Reuniones</div>
+    </div>
+    <div class="card-kpi-preview">
+      <div class="kpi-title">Empresas</div>
+      <div class="kpi-value">13</div>
+      <div class="kpi-sub">Contactadas</div>
+    </div>
+    <div class="card-kpi-preview" style="background: #F0FDF4; border-color: #BBF7D0;">
+      <div class="kpi-title" style="color: #15803D;">Contrataciones</div>
+      <div class="kpi-value" style="color: #15803D;">2</div>
+      <div class="kpi-sub" style="color: #166534;">Suscripciones</div>
+    </div>
+  </div>
+
+  <h2>7.1. Uso de los Filtros de Búsqueda</h2>
+  <ul>
+    <li><strong>Año:</strong> Muestra el año en curso (2026).</li>
+    <li><strong>Mes:</strong> Selecciona un mes específico (ej. <em>Octubre</em>) o la opción <strong><code>-- Todos --</code></strong> para visualizar todo el año.</li>
+    <li><strong>Fecha:</strong> Permite filtrar por un día exacto (ej. <em>23</em>) o ver <strong><code>-- Todos --</code></strong> los días del mes. Se adapta automáticamente a los días reales del mes seleccionado (28, 29, 30 o 31 días).</li>
+    <li><strong>Botón "Limpiar filtros":</strong> Restablece inmediatamente la búsqueda al mes actual.</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 8 -->
+  <h1>8. Directorio de Empresas y Clientes</h1>
+  <p>
+    En la pestaña <strong>"Empresas"</strong> dispones de la cartera de cuentas contactadas por el equipo comercial de BICSA:
+  </p>
+  <ul>
+    <li><strong>Buscador Compacto:</strong> Ingresa el nombre de la empresa en el cuadro <em>"Buscar empresa"</em> para localizar rápidamente sus datos, ciudad y visitas previas.</li>
+    <li><strong>Filtro por Estado:</strong> Puedes filtrar por <em>Prospecto, En negociación, Contratado o Venta perdida</em>.</li>
+    <li><strong>Historial de Visitas por Empresa:</strong> Al pulsar sobre cualquier empresa podrás ver la fecha de la primera visita, la última reunión realizada y los ejecutivos que han interactuado con la cuenta.</li>
+  </ul>
+
+  <!-- SECCIÓN 9 -->
+  <h1>9. Preguntas Frecuentes y Solución de Problemas</h1>
+
+  <h3>¿Qué hago si se me olvidó registrar una visita durante el día?</h3>
+  <p>
+    Si tu jornada aún está abierta, simplemente ingresa a <strong>"Jornada en Curso"</strong> y añade la visita antes de cerrarla. Si ya cerraste la jornada, comunícate con tu Administrador para que anexe la visita en la jornada auditada correspondiente.
+  </p>
+
+  <h3>¿Por qué se cerró mi sesión automáticamente?</h3>
+  <p>
+    Por política de seguridad y auditoría institucional, el sistema <strong>cierra automáticamente todas las sesiones abiertas a las 00:00 hs de cada día</strong>. Al día siguiente solo debes ingresar nuevamente tu correo y contraseña para iniciar tu nueva jornada.
+  </p>
+
+  <h3>¿Puedo registrar más de una jornada el mismo día?</h3>
+  <p>
+    No. El sistema permite una única jornada comercial por fecha calendario para garantizar la coherencia contable y de combustible.
+  </p>
+
+  <h3>¿Qué hago si la cámara no se abre al tomar la foto del odómetro?</h3>
+  <p>
+    Verifica que hayas otorgado permisos de acceso a la cámara en los ajustes de tu navegador web móvil (Chrome o Safari). Recuerda que la conexión debe ser segura mediante HTTPS.
+  </p>
+
+  <div class="callout callout-tip" style="margin-top: 25px;">
+    <div class="callout-title">¡Mucho éxito en tus gestiones comerciales!</div>
+    La constancia en el registro de tus visitas es el reflejo de tu profesionalismo y garantiza el crecimiento conjunto de BICSA S.A.
+  </div>
+
+</body>
+</html>
+"""
+
+def generate_pdf():
+    print("Escribiendo archivo HTML del Manual de Ejecutivo...")
+    with open(HTML_FILE, "w", encoding="utf-8") as f:
+        f.write(HTML_CONTENT)
+    print(f"HTML generado en: {HTML_FILE}")
+
+    print("Compilando HTML a PDF profesional con Microsoft Edge...")
+    cmd = [
+        EDGE_PATH,
+        "--headless",
+        "--disable-gpu",
+        "--run-all-compositor-stages-before-draw",
+        f"--print-to-pdf={PDF_FILE}",
+        HTML_FILE
+    ]
+    subprocess.run(cmd, check=True)
+    if os.path.exists(PDF_FILE):
+        size_kb = os.path.getsize(PDF_FILE) / 1024
+        print(f"Éxito: {PDF_FILE} generado ({size_kb:.1f} KB)")
+    else:
+        print("Error: No se pudo generar el archivo PDF.")
+
+if __name__ == "__main__":
+    generate_pdf()

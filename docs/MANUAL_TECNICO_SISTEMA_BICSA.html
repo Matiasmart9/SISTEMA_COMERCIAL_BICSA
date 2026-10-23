@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Manual Técnico - Sistema de Gestión Comercial BICSA V1.3</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 16mm 18mm 18mm 18mm;
+      @bottom-left {
+        content: "BICSA S.A. | Manual Técnico de Arquitectura y Despliegue V1.3";
+        font-size: 8pt;
+        color: #94A3B8;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+      }
+      @bottom-right {
+        content: "Página " counter(page);
+        font-size: 8pt;
+        color: #64748B;
+        font-weight: bold;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+      }
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #1E293B;
+      line-height: 1.55;
+      font-size: 9.5pt;
+      margin: 0;
+      padding: 0;
+    }
+    .cover {
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100vh;
+      box-sizing: border-box;
+      padding: 20mm 10mm 10mm 10mm;
+    }
+    .cover-top {
+      border-top: 6px solid #FF6000;
+      padding-top: 30px;
+    }
+    .cover-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 26pt;
+      font-weight: 900;
+      color: #0F172A;
+      letter-spacing: -0.02em;
+    }
+    .cover-brand span.orange {
+      color: #FF6000;
+    }
+    .cover-badge {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 6px 14px;
+      background: #FFF7ED;
+      color: #EA4800;
+      border: 1px solid #FFEDD5;
+      border-radius: 9999px;
+      font-weight: 800;
+      font-size: 9pt;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .cover-title {
+      font-size: 28pt;
+      font-weight: 800;
+      color: #0F172A;
+      line-height: 1.15;
+      margin: 25px 0 10px 0;
+    }
+    .cover-subtitle {
+      font-size: 13pt;
+      color: #475569;
+      font-weight: 400;
+      line-height: 1.4;
+      max-width: 600px;
+    }
+    .cover-meta {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .meta-label {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748B;
+      letter-spacing: 0.04em;
+    }
+    .meta-value {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #0F172A;
+      margin-top: 2px;
+    }
+    .cover-footer {
+      border-top: 1px solid #E2E8F0;
+      padding-top: 14px;
+      font-size: 8pt;
+      color: #94A3B8;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .toc {
+      page-break-after: always;
+      padding-top: 10px;
+    }
+    .toc-title {
+      font-size: 18pt;
+      font-weight: 800;
+      color: #0F172A;
+      border-bottom: 2px solid #FF6000;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+    }
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .toc-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 0;
+      border-bottom: 1px dotted #CBD5E1;
+      font-size: 9.5pt;
+    }
+    .toc-item span.num {
+      font-weight: 700;
+      color: #FF6000;
+      margin-right: 8px;
+      width: 20px;
+      display: inline-block;
+    }
+    .toc-item span.name {
+      font-weight: 600;
+      color: #1E293B;
+      flex: 1;
+    }
+    .toc-item span.page {
+      font-weight: 700;
+      color: #64748B;
+    }
+
+    h1 {
+      font-size: 17pt;
+      font-weight: 800;
+      color: #0F172A;
+      border-left: 5px solid #FF6000;
+      padding-left: 10px;
+      margin: 28px 0 14px 0;
+      page-break-after: avoid;
+    }
+    h2 {
+      font-size: 12.5pt;
+      font-weight: 700;
+      color: #1E293B;
+      margin: 20px 0 10px 0;
+      border-bottom: 1px solid #E2E8F0;
+      padding-bottom: 4px;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: #334155;
+      margin: 14px 0 6px 0;
+      page-break-after: avoid;
+    }
+    p {
+      margin: 0 0 10px 0;
+      color: #334155;
+      text-align: justify;
+    }
+    ul, ol {
+      margin: 0 0 12px 0;
+      padding-left: 22px;
+      color: #334155;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+
+    .callout {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-size: 9pt;
+      page-break-inside: avoid;
+    }
+    .callout-info {
+      background: #EFF6FF;
+      border-left: 4px solid #3B82F6;
+      color: #1E40AF;
+    }
+    .callout-warn {
+      background: #FFFBEB;
+      border-left: 4px solid #F59E0B;
+      color: #92400E;
+    }
+    .callout-tip {
+      background: #ECFDF5;
+      border-left: 4px solid #10B981;
+      color: #065F46;
+    }
+    .callout-bicsa {
+      background: #FFF7ED;
+      border-left: 4px solid #FF6000;
+      color: #9A3412;
+    }
+    .callout-title {
+      font-weight: 800;
+      font-size: 9.5pt;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+    th {
+      background: #0F172A;
+      color: #FFFFFF;
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+      border: 1px solid #1E293B;
+    }
+    td {
+      padding: 7px 10px;
+      border: 1px solid #E2E8F0;
+      color: #334155;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td {
+      background: #F8FAFC;
+    }
+
+    pre, code {
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+    pre {
+      background: #0B1120;
+      color: #E2E8F0;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 8pt;
+      line-height: 1.45;
+      overflow-x: auto;
+      margin: 12px 0;
+      page-break-inside: avoid;
+      border: 1px solid #1E293B;
+    }
+    code.inline {
+      background: #F1F5F9;
+      color: #0F172A;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      font-weight: 600;
+    }
+
+    .diagram-box {
+      background: #F8FAFC;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 10px;
+      padding: 16px;
+      margin: 16px 0;
+      page-break-inside: avoid;
+    }
+    .diagram-title {
+      font-weight: 800;
+      font-size: 10pt;
+      color: #0F172A;
+      text-align: center;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .diagram-card {
+      background: #FFFFFF;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .diagram-card.primary {
+      border-color: #FF6000;
+      background: #FFF7ED;
+    }
+    .diagram-card.dark {
+      border-color: #334155;
+      background: #0F172A;
+      color: #FFF;
+    }
+    .diagram-card.dark .d-role { color: #94A3B8; }
+    .diagram-card.dark .d-port { color: #38BDF8; }
+    .d-name { font-weight: 800; font-size: 9pt; }
+    .d-role { font-size: 7.5pt; color: #64748B; margin-top: 2px; }
+    .d-port { font-size: 8pt; font-weight: 700; color: #EA4800; margin-top: 4px; }
+
+    .step-card {
+      display: flex;
+      gap: 12px;
+      margin: 10px 0;
+      page-break-inside: avoid;
+    }
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #FF6000;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 9pt;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-body {
+      flex: 1;
+    }
+    .step-body strong {
+      color: #0F172A;
+    }
+    .page-break {
+      page-break-after: always;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PORTADA -->
+  <div class="cover">
+    <div class="cover-top">
+      <div class="cover-brand">
+        <span>bicsa</span><span class="orange">.</span>
+      </div>
+      <div class="cover-badge">Documentación Oficial de Ingeniería</div>
+      <div class="cover-title">Manual Técnico de Arquitectura, Despliegue y Operaciones</div>
+      <div class="cover-subtitle">
+        Guía integral de infraestructura, componentes, contenedores Docker, bases de datos PostgreSQL, configuración DNS, certificados SSL y procedimientos de mantenimiento para el Sistema de Gestión Comercial BICSA.
+      </div>
+
+      <div class="cover-meta">
+        <div class="meta-item">
+          <span class="meta-label">Sistema</span>
+          <span class="meta-value">BICSA Gestión Comercial</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Versión de Release</span>
+          <span class="meta-value">V1.3 (Producción)</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Entorno de Producción</span>
+          <span class="meta-value">Oracle Cloud Infrastructure (OCI)</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Clasificación</span>
+          <span class="meta-value">Documento Técnico Confidencial</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Fecha de Actualización</span>
+          <span class="meta-value">Octubre 2026</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Área Responsable</span>
+          <span class="meta-value">Ingeniería de Software e Infraestructura</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-footer">
+      <span>© 2026 BICSA S.A. Todos los derechos reservados.</span>
+      <span>Asunción, Paraguay</span>
+    </div>
+  </div>
+
+  <!-- ÍNDICE -->
+  <div class="toc">
+    <div class="toc-title">Índice General de Contenidos</div>
+    <ul class="toc-list">
+      <li class="toc-item"><span class="num">1.</span><span class="name">Ficha Técnica y Resumen del Proyecto</span><span class="page">3</span></li>
+      <li class="toc-item"><span class="num">2.</span><span class="name">Arquitectura del Sistema y Diagrama de Red</span><span class="page">3</span></li>
+      <li class="toc-item"><span class="num">3.</span><span class="name">Stack Tecnológico Detallado</span><span class="page">4</span></li>
+      <li class="toc-item"><span class="num">4.</span><span class="name">Composición del Despliegue Docker Compose</span><span class="page">5</span></li>
+      <li class="toc-item"><span class="num">5.</span><span class="name">Variables de Entorno y Configuración (.env)</span><span class="page">6</span></li>
+      <li class="toc-item"><span class="num">6.</span><span class="name">Modelo de Base de Datos PostgreSQL 16</span><span class="page">7</span></li>
+      <li class="toc-item"><span class="num">7.</span><span class="name">Infraestructura en la Nube (Oracle Cloud OCI)</span><span class="page">9</span></li>
+      <li class="toc-item"><span class="num">8.</span><span class="name">Configuración de Dominio y Registros DNS</span><span class="page">10</span></li>
+      <li class="toc-item"><span class="num">9.</span><span class="name">Certificados de Seguridad SSL/TLS y Terminación HTTPS</span><span class="page">11</span></li>
+      <li class="toc-item"><span class="num">10.</span><span class="name">Mecanismos de Autenticación, JWT y Auto-Cierre a Medianoche</span><span class="page">12</span></li>
+      <li class="toc-item"><span class="num">11.</span><span class="name">Estrategia de Copias de Seguridad (Backups y Restauración)</span><span class="page">13</span></li>
+      <li class="toc-item"><span class="num">12.</span><span class="name">Comandos Operativos de Despliegue y Mantenimiento</span><span class="page">14</span></li>
+    </ul>
+  </div>
+
+  <!-- SECCIÓN 1 -->
+  <h1>1. Ficha Técnica y Resumen del Proyecto</h1>
+  <p>
+    El <strong>Sistema de Gestión Comercial BICSA</strong> es una plataforma de clase empresarial diseñada para digitalizar, supervisar y auditar la totalidad de las operaciones comerciales de campo y reuniones corporativas llevadas a cabo por los ejecutivos de cuenta. Su objetivo principal es erradicar los registros informales en papel y planillas desarticuladas, proporcionando trazabilidad geográfica, auditoría de odómetro vehicular, registro de traslados en plataformas digitales, prorrateo de costos de movilidad e indicadores ejecutivos en tiempo real.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Atributo</th>
+        <th>Especificación Técnica</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Nombre Oficial</strong></td>
+        <td>Sistema Comercial BICSA (Gestión Comercial)</td>
+      </tr>
+      <tr>
+        <td><strong>Versión de Producción</strong></td>
+        <td>Release V1.3.0</td>
+      </tr>
+      <tr>
+        <td><strong>Tipo de Aplicación</strong></td>
+        <td>Single Page Application (SPA) + Progressive Web App (PWA) instalable + REST API</td>
+      </tr>
+      <tr>
+        <td><strong>Paradigma de Arquitectura</strong></td>
+        <td>Arquitectura contenerizada multi-servicio en 3 capas desacopladas</td>
+      </tr>
+      <tr>
+        <td><strong>Plataforma de Host</strong></td>
+        <td>Oracle Cloud Infrastructure (OCI) - Máquina Virtual Ubuntu Linux</td>
+      </tr>
+      <tr>
+        <td><strong>Control de Versiones</strong></td>
+        <td>Git / Repositorio GitHub: <code>Matiasmart9/SISTEMA_COMERCIAL_BICSA</code> (rama <code>main</code>)</td>
+      </tr>
+      <tr>
+        <td><strong>Orquestador Local</strong></td>
+        <td>Docker Engine 26+ y Docker Compose V2</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECCIÓN 2 -->
+  <h1>2. Arquitectura del Sistema y Diagrama de Red</h1>
+  <p>
+    El sistema opera bajo un esquema de <strong>4 contenedores Docker</strong> independientes interconectados a través de una red virtual interna con bridge aislado (<code class="inline">bicsa_net</code>), asegurando que los servicios críticos (como PostgreSQL y el Backend Node.js) no queden expuestos directamente a internet, sino únicamente a través del Proxy Inverso seguro Nginx.
+  </p>
+
+  <div class="diagram-box">
+    <div class="diagram-title">Topología de Red y Flujo de Peticiones en Contenedores</div>
+    <div class="diagram-grid">
+      <div class="diagram-card dark">
+        <div class="d-name">NGINX</div>
+        <div class="d-role">Proxy Inverso & SSL</div>
+        <div class="d-port">Host: 8088 / 80 / 443</div>
+      </div>
+      <div class="diagram-card primary">
+        <div class="d-name">FRONTEND</div>
+        <div class="d-role">React SPA / PWA</div>
+        <div class="d-port">Interno: 4173</div>
+      </div>
+      <div class="diagram-card">
+        <div class="d-name">BACKEND</div>
+        <div class="d-role">API REST Express</div>
+        <div class="d-port">Interno: 3001</div>
+      </div>
+      <div class="diagram-card">
+        <div class="d-name">POSTGRESQL</div>
+        <div class="d-role">Motor SQL Relacional</div>
+        <div class="d-port">Interno: 5432 (Host: 5434)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Ingreso del Cliente:</strong> El navegador o smartphone envía peticiones HTTP/HTTPS al dominio público.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Ruteo Nginx:</strong> Las rutas de interfaz web (<code class="inline">/</code>) se despachan al contenedor frontend en el puerto 4173. Las peticiones a la API (<code class="inline">/api/*</code>) se reescriben y despachan al backend en el puerto 3001.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Seguridad y Negocio:</strong> El backend valida los tokens JWT, ejecuta las reglas de negocio, y accede al contenedor PostgreSQL mediante un connection pool optimizado.
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 3 -->
+  <h1>3. Stack Tecnológico Detallado</h1>
+
+  <h2>3.1. Frontend (Capa de Presentación)</h2>
+  <ul>
+    <li><strong>React 18.3 & TypeScript:</strong> Interfaz de usuario reactiva, fuertemente tipada para prevenir errores en tiempo de ejecución.</li>
+    <li><strong>Vite 5:</strong> Empaquetador y servidor de desarrollo ultra-rápido, con árbol de dependencias optimizado y minificación de assets.</li>
+    <li><strong>Progressive Web App (PWA):</strong> Implementado mediante <code class="inline">vite-plugin-pwa</code> y Workbox, permitiendo la instalación en la pantalla de inicio de dispositivos móviles (Android / iOS) con apariencia de aplicación nativa.</li>
+    <li><strong>Lucide Icons & SVG Vectoriales:</strong> Íconos estilizados de alta resolución, complementados con componentes vectoriales SVG custom para la silueta frontal de vehículos y el pin oficial de Google Maps.</li>
+    <li><strong>Vanilla CSS Moderno:</strong> Arquitectura CSS con variables (<code class="inline">--primary: #FF6000</code>, <code class="inline">--ink: #0F172A</code>), sistema de pills, tarjetas de KPIs y diseño 100% responsivo para móviles y escritorios.</li>
+    <li><strong>Compresión de Imágenes en Cliente:</strong> Reducción automática de tamaño de fotos de odómetro mediante Canvas antes de su envío a la base de datos, optimizando el consumo de ancho de banda móvil.</li>
+  </ul>
+
+  <h2>3.2. Backend (Capa de Servicios y Lógica de Negocio)</h2>
+  <ul>
+    <li><strong>Node.js 20 LTS & Express 4:</strong> Servidor REST asíncrono, con manejo robusto de middleware de autorización y ruteo estructurado por módulos.</li>
+    <li><strong>node-postgres (<code class="inline">pg</code>):</strong> Driver nativo de PostgreSQL con Connection Pooling (<code class="inline">max: 20</code>, <code class="inline">idleTimeoutMillis: 30000</code>).</li>
+    <li><strong>JWT (JSON Web Tokens):</strong> Cifrado de credenciales stateless mediante firmas HMAC-SHA256, verificando identidad y rol en cada transacción.</li>
+    <li><strong>Bcryptjs:</strong> Algoritmo de hashing irreversible con salt rounds de 10 para todas las contraseñas de usuarios.</li>
+    <li><strong>ExcelJS:</strong> Generación en memoria de hojas de cálculo de Microsoft Excel (.xlsx) con estilos corporativos BICSA, cabeceras institucionales, formateo de números en Guaraníes y múltiples solapas analíticas.</li>
+  </ul>
+
+  <h2>3.3. Base de Datos (Persistencia)</h2>
+  <ul>
+    <li><strong>PostgreSQL 16 Alpine:</strong> Motor relacional de alto rendimiento y bajo consumo de memoria RAM.</li>
+    <li><strong>Extensión pgcrypto:</strong> Generación nativa de identificadores UUIDv4 mediante <code class="inline">gen_random_uuid()</code>.</li>
+    <li><strong>Tipos ENUM Nativos:</strong> Restricción estricta en base de datos para roles (<code class="inline">user_role</code>), etapas del embudo comercial (<code class="inline">funnel_stage</code>) y resultados (<code class="inline">visit_result</code>).</li>
+    <li><strong>Columnas Generadas (STORED):</strong> Cálculo automático e infalible de kilometraje total: <code class="inline">km_total INTEGER GENERATED ALWAYS AS (km_end - km_start) STORED</code>.</li>
+    <li><strong>Triggers PL/pgSQL:</strong> Actualización automática de marcas temporales <code class="inline">updated_at</code> en todas las tablas principales.</li>
+  </ul>
+
+  <!-- SECCIÓN 4 -->
+  <h1>4. Composición del Despliegue Docker Compose</h1>
+  <p>
+    El archivo <code class="inline">docker-compose.yml</code> orquesta la infraestructura completa. A continuación se desglosan los 4 servicios:
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Servicio</th>
+        <th>Imagen / Build</th>
+        <th>Puerto Host</th>
+        <th>Puerto Contenedor</th>
+        <th>Volúmenes y Dependencias</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>postgres</strong></td>
+        <td><code>postgres:16-alpine</code></td>
+        <td>5434</td>
+        <td>5432</td>
+        <td>Volumen: <code>bicsa_comercial_postgres_data</code>. Scripts init en <code>/database/</code></td>
+      </tr>
+      <tr>
+        <td><strong>backend</strong></td>
+        <td>Dockerfile (Node.js 20)</td>
+        <td>No expuesto</td>
+        <td>3001</td>
+        <td>Depende de: <code>postgres</code> (condición: healthy). Código en <code>/app</code></td>
+      </tr>
+      <tr>
+        <td><strong>frontend</strong></td>
+        <td>Dockerfile (Node 20 + Serve)</td>
+        <td>No expuesto</td>
+        <td>4173</td>
+        <td>Build de producción minificado y servido con <code>serve -s dist</code></td>
+      </tr>
+      <tr>
+        <td><strong>nginx</strong></td>
+        <td><code>nginx:alpine</code></td>
+        <td>8088</td>
+        <td>80</td>
+        <td>Monta <code>./nginx/default.conf</code>. Depende de: <code>frontend</code> y <code>backend</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-bicsa">
+    <div class="callout-title">Aislamiento de Seguridad en Puertos</div>
+    Ni el frontend (4173) ni el backend (3001) exponen puertos al exterior del servidor. Únicamente Nginx recibe tráfico externo a través del puerto configurado (8088 en host o 80/443 con proxy inverso global), garantizando que nadie pueda evadir las cabeceras de seguridad y autenticación.
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 5 -->
+  <h1>5. Variables de Entorno y Configuración (.env)</h1>
+  <p>
+    El sistema se configura a través del archivo <code class="inline">.env</code> en la raíz del repositorio. Este archivo nunca debe compartirse ni subirse al repositorio público de Git.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Variable</th>
+        <th>Ejemplo en Producción</th>
+        <th>Descripción y Propósito</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>POSTGRES_DB</code></td>
+        <td><code>bicsa_db</code></td>
+        <td>Nombre de la base de datos PostgreSQL</td>
+      </tr>
+      <tr>
+        <td><code>POSTGRES_USER</code></td>
+        <td><code>bicsa_user</code></td>
+        <td>Usuario propietario con permisos de lectura y escritura</td>
+      </tr>
+      <tr>
+        <td><code>POSTGRES_PASSWORD</code></td>
+        <td><code>[Clave-Secreta-Alta-Seguridad]</code></td>
+        <td>Contraseña del usuario de base de datos</td>
+      </tr>
+      <tr>
+        <td><code>POSTGRES_HOST_PORT</code></td>
+        <td><code>5434</code></td>
+        <td>Puerto en el host para conexiones de mantenimiento o pgAdmin</td>
+      </tr>
+      <tr>
+        <td><code>NODE_ENV</code></td>
+        <td><code>production</code></td>
+        <td>Modo de ejecución de Node.js (optimiza rendimiento)</td>
+      </tr>
+      <tr>
+        <td><code>PORT</code></td>
+        <td><code>3001</code></td>
+        <td>Puerto interno del servidor Express</td>
+      </tr>
+      <tr>
+        <td><code>JWT_SECRET</code></td>
+        <td><code>[Cadena-Hex-256-Bits]</code></td>
+        <td>Clave privada para firmar y validar tokens criptográficos de sesión</td>
+      </tr>
+      <tr>
+        <td><code>JWT_EXPIRES_IN</code></td>
+        <td><code>8h</code></td>
+        <td>Tiempo de validez de la sesión antes de requerir re-login</td>
+      </tr>
+      <tr>
+        <td><code>DATABASE_URL</code></td>
+        <td><code>postgresql://bicsa_user:pass@postgres:5432/bicsa_db</code></td>
+        <td>Cadena de conexión interna entre contenedores Docker</td>
+      </tr>
+      <tr>
+        <td><code>VITE_API_URL</code></td>
+        <td><code>/api</code></td>
+        <td>Ruta base del cliente para despachar peticiones AJAX al proxy</td>
+      </tr>
+      <tr>
+        <td><code>PORT_HTTP</code></td>
+        <td><code>8088</code></td>
+        <td>Puerto HTTP expuesto en el servidor anfitrión</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECCIÓN 6 -->
+  <h1>6. Modelo de Base de Datos PostgreSQL 16</h1>
+  <p>
+    El esquema relacional fue diseñado bajo estándares de <strong>tercera forma normal (3NF)</strong> con integridad referencial estricta y llaves foráneas con eliminación restringida (<code class="inline">ON DELETE RESTRICT</code>) para proteger la trazabilidad histórica de visitas y salidas.
+  </p>
+
+  <h3>Diccionario de Tablas Principales:</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Tabla</th>
+        <th>Campos Clave</th>
+        <th>Descripción y Reglas de Negocio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>users</strong></td>
+        <td><code>id, email, password_hash, full_name, role, is_active, photo_odometer_enabled, last_login_at</code></td>
+        <td>Almacena las cuentas de ejecutivos, gerentes y administradores. Controla el estado activo/inactivo y la obligatoriedad de fotos.</td>
+      </tr>
+      <tr>
+        <td><strong>companies</strong></td>
+        <td><code>id, name, normalized_name, commercial_status, department, city, zone, maps_url, notes</code></td>
+        <td>Directorio corporativo de clientes y prospectos. <code>normalized_name</code> cuenta con índice único para evitar duplicados.</td>
+      </tr>
+      <tr>
+        <td><strong>work_days</strong></td>
+        <td><code>id, user_id, date, km_start, km_end, km_total, status, mobility_type, fuel_amount_gs, platform_trips</code></td>
+        <td>Jornadas diarias de trabajo. Valida que el odómetro final sea mayor o igual al inicial mediante restricción <code>CHECK</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>visits</strong></td>
+        <td><code>id, work_day_id, user_id, company_id, date, reason, funnel_stage, result, transport_cost_gs, total_cost_gs</code></td>
+        <td>Visitas comerciales asociadas a una jornada y una empresa. Registra costos de plataformas, combustible prorrateado y viáticos.</td>
+      </tr>
+      <tr>
+        <td><strong>audit_log</strong></td>
+        <td><code>id, action, entity_type, entity_id, target_user_id, performed_by, details, created_at</code></td>
+        <td>Traza de auditoría inmutable. Registra cualquier modificación correctiva hecha por administradores en jornadas cerradas.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 7 -->
+  <h1>7. Infraestructura en la Nube (Oracle Cloud OCI)</h1>
+  <p>
+    La aplicación se encuentra alojada en una instancia de cómputo en la nube de <strong>Oracle Cloud Infrastructure (OCI)</strong> bajo el sistema operativo <strong>Ubuntu Linux LTS</strong>. Para garantizar la disponibilidad continua, deben configurarse las siguientes políticas de red:
+  </p>
+
+  <h2>7.1. Reglas de Entrada (Ingress Rules) en OCI Virtual Cloud Network (VCN)</h2>
+  <p>
+    En la consola web de Oracle Cloud, navegue a <em>Networking &gt; Virtual Cloud Networks &gt; Security Lists &gt; Default Security List</em> y verifique las siguientes reglas de ingreso:
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Protocolo</th>
+        <th>CIDR Origen</th>
+        <th>Puerto Destino</th>
+        <th>Propósito Operativo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>TCP</td>
+        <td><code>0.0.0.0/0</code></td>
+        <td><strong>22</strong></td>
+        <td>Acceso administrativo SSH con llave criptográfica</td>
+      </tr>
+      <tr>
+        <td>TCP</td>
+        <td><code>0.0.0.0/0</code></td>
+        <td><strong>80</strong></td>
+        <td>Tráfico web HTTP y validación de desafíos Let's Encrypt</td>
+      </tr>
+      <tr>
+        <td>TCP</td>
+        <td><code>0.0.0.0/0</code></td>
+        <td><strong>443</strong></td>
+        <td>Tráfico web seguro HTTPS encriptado</td>
+      </tr>
+      <tr>
+        <td>TCP</td>
+        <td><code>0.0.0.0/0</code></td>
+        <td><strong>8088</strong></td>
+        <td>Puerto alternativo directo de la aplicación BICSA Nginx</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>7.2. Configuración del Cortafuegos Interno de Ubuntu (iptables / ufw)</h2>
+  <p>
+    Las imágenes de Ubuntu en Oracle Cloud incluyen reglas por defecto en <code class="inline">iptables</code> que bloquean puertos no estándar. Para habilitar los puertos necesarios, ejecute en la consola del servidor:
+  </p>
+  <pre># Abrir puertos en el cortafuegos de Ubuntu
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 8088 -j ACCEPT
+sudo netfilter-persistent save</pre>
+
+  <!-- SECCIÓN 8 -->
+  <h1>8. Configuración de Dominio y Registros DNS</h1>
+  <p>
+    Para que los usuarios puedan acceder al sistema mediante una dirección web amigable (en lugar de recordar la dirección IP numérica), se configura la zona DNS:
+  </p>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <strong>Obtención de la IP Pública:</strong> En la consola de Oracle Cloud, identifique la <em>Public IPv4 Address</em> asignada a su máquina virtual (ejemplo: <code class="inline">129.151.108.50</code>). Se recomienda que sea una IP estática (Reserved Public IP) para evitar cambios accidentales al reiniciar.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <strong>Creación del Registro Tipo A en el Proveedor DNS:</strong> En el panel de su proveedor de dominio (NIC.py, Cloudflare, DuckDNS o GoDaddy), añada:
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo de Registro</th>
+            <th>Nombre / Host</th>
+            <th>Valor / Destino</th>
+            <th>TTL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>A</strong></td>
+            <td><code>comercial</code> (o subdominio asignado)</td>
+            <td><code>[IP Pública de tu Oracle Cloud]</code></td>
+            <td>300 seg (5 min) o Automático</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <strong>Verificación de Propagación:</strong> Compruebe la correcta resolución ejecutando en su terminal local:
+      <pre>nslookup bicsa-gestion-comercial.duckdns.org
+# o bien:
+dig +short comercial.bicsa.com.py</pre>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 9 -->
+  <h1>9. Certificados de Seguridad SSL/TLS y Terminación HTTPS</h1>
+  <p>
+    La plataforma requiere HTTPS obligatorio para proteger las contraseñas de los usuarios, los datos geográficos de visitas y para permitir que los navegadores móviles autoricen el funcionamiento de la cámara (foto de odómetro) y la geolocalización.
+  </p>
+
+  <h2>9.1. Opción 1: Certificado Automático con Traefik / Coolify (Integrado)</h2>
+  <p>
+    El archivo <code class="inline">docker-compose.yml</code> ya contiene las etiquetas (<code class="inline">labels</code>) para la emisión automática de certificados de <strong>Let's Encrypt</strong>:
+  </p>
+  <pre>labels:
+  - "traefik.enable=true"
+  - "traefik.docker.network=coolify"
+  - "traefik.http.routers.bicsa-comercial.entrypoints=https"
+  - "traefik.http.routers.bicsa-comercial.rule=Host(`bicsa-gestion-comercial.duckdns.org`)"
+  - "traefik.http.routers.bicsa-comercial.tls.certresolver=letsencrypt"
+  - "traefik.http.services.bicsa-comercial.loadbalancer.server.port=80"</pre>
+  <p>
+    Bajo este esquema, el proxy maestro Coolify/Traefik valida el dominio contra los servidores de Let's Encrypt y renueva el certificado cada 60 días de manera 100% desatendida.
+  </p>
+
+  <h2>9.2. Opción 2: Certificado Standalone con Certbot en el Host</h2>
+  <p>
+    Si se administra Nginx de forma nativa sin Traefik, se puede generar y renovar el certificado SSL mediante Certbot en el servidor Ubuntu:
+  </p>
+  <pre># Instalar Certbot oficial
+sudo apt update && sudo apt install -y certbot python3-certbot-nginx
+
+# Solicitar certificado para el dominio oficial
+sudo certbot certonly --standalone -d comercial.bicsa.com.py -m soporte@bicsa.com.py --agree-tos
+
+# Renovar automáticamente mediante tarea programada (cron)
+sudo crontab -e
+# Agregar línea para renovar todos los lunes a las 03:00 AM:
+0 3 * * 1 certbot renew --quiet && docker compose -f /home/ubuntu/SISTEMA_COMERCIAL_BICSA/docker-compose.yml restart nginx</pre>
+
+  <!-- SECCIÓN 10 -->
+  <h1>10. Mecanismos de Autenticación, JWT y Auto-Cierre a Medianoche</h1>
+  
+  <h2>10.1. Tokens JWT Stateless</h2>
+  <p>
+    Al iniciar sesión exitosamente, el backend emite un token JWT codificado con el algoritmo <code class="inline">HS256</code> que contiene el <code class="inline">userId</code>, <code class="inline">email</code>, <code class="inline">role</code> y <code class="inline">full_name</code>. El cliente web almacena este token de manera segura en el almacenamiento local y lo adjunta en la cabecera HTTP <code class="inline">Authorization: Bearer [TOKEN]</code> en cada petición.
+  </p>
+
+  <h2>10.2. Política de Auto-Cierre de Sesión a las 00:00 hs</h2>
+  <div class="callout callout-info">
+    <div class="callout-title">Regla de Seguridad Operativa</div>
+    Por directiva institucional de auditoría comercial, ningún ejecutivo ni usuario puede mantener una sesión abierta que trascienda al día siguiente. Al llegar las 00:00:00 de cada noche, cualquier sesión activa se invalida automáticamente.
+  </div>
+  <p>
+    Esta funcionalidad está programada en el módulo <code class="inline">AuthContext.tsx</code> del frontend:
+  </p>
+  <pre>// Cálculo milimétrico de la próxima medianoche en tiempo local
+const now = new Date();
+const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+
+// Programación del temporizador que forzará el cierre de sesión al cambiar de día
+const midnightTimer = setTimeout(() => {
+  logout();
+  window.location.href = '/login?expired=midnight';
+}, msUntilMidnight);</pre>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 11 -->
+  <h1>11. Estrategia de Copias de Seguridad (Backups y Restauración)</h1>
+  <p>
+    La información comercial y de visitas es un activo crítico de BICSA. Se define una política de respaldos automatizados con rotación de 30 días.
+  </p>
+
+  <h2>11.1. Script de Backup Diario Automatizado</h2>
+  <p>
+    Cree el archivo <code class="inline">/home/ubuntu/backup_bicsa.sh</code> en su servidor:
+  </p>
+  <pre>#!/bin/bash
+BACKUP_DIR="/home/ubuntu/backups_bicsa"
+mkdir -p $BACKUP_DIR
+FECHA=$(date +"%Y%m%d_%H%M%S")
+ARCHIVO="$BACKUP_DIR/bicsa_backup_$FECHA.sql.gz"
+
+# Ejecutar volcado en caliente desde el contenedor PostgreSQL
+docker exec bicsa_comercial_postgres pg_dump -U bicsa_user -d bicsa_db | gzip > "$ARCHIVO"
+
+# Eliminar respaldos más antiguos a 30 días para no saturar el disco
+find $BACKUP_DIR -name "bicsa_backup_*.sql.gz" -mtime +30 -delete
+
+echo "Backup completado exitosamente: $ARCHIVO"</pre>
+
+  <h2>11.2. Programación en Crontab</h2>
+  <p>Ejecutar <code class="inline">crontab -e</code> y programar el volcado diario a las 02:00 AM:</p>
+  <pre>0 2 * * * /bin/bash /home/ubuntu/backup_bicsa.sh >> /home/ubuntu/backup.log 2>&1</pre>
+
+  <h2>11.3. Procedimiento de Restauración de Desastres</h2>
+  <p>En caso de requerir restaurar una copia de seguridad en un servidor nuevo o tras un incidente:</p>
+  <pre># 1. Asegurarse de que el contenedor de base de datos esté corriendo
+docker compose up -d postgres
+
+# 2. Descomprimir e inyectar el backup en la base de datos limpia
+gunzip -c /home/ubuntu/backups_bicsa/bicsa_backup_20261023_020000.sql.gz | docker exec -i bicsa_comercial_postgres psql -U bicsa_user -d bicsa_db</pre>
+
+  <!-- SECCIÓN 12 -->
+  <h1>12. Comandos Operativos de Despliegue y Mantenimiento</h1>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 45%;">Acción Operativa</th>
+        <th>Comando de Terminal a Ejecutar</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Actualizar código y frontend a última versión</strong></td>
+        <td>
+          <pre style="margin: 0;">cd ~/SISTEMA_COMERCIAL_BICSA
+git pull origin main
+docker compose build frontend
+docker compose up -d --force-recreate frontend
+docker compose restart nginx</pre>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Verificar estado de los 4 contenedores</strong></td>
+        <td><code>docker compose ps</code></td>
+      </tr>
+      <tr>
+        <td><strong>Inspeccionar logs de errores del backend en vivo</strong></td>
+        <td><code>docker compose logs -f --tail=100 backend</code></td>
+      </tr>
+      <tr>
+        <td><strong>Inspeccionar peticiones web en Nginx</strong></td>
+        <td><code>docker compose logs -f --tail=100 nginx</code></td>
+      </tr>
+      <tr>
+        <td><strong>Reiniciar el sistema completo</strong></td>
+        <td><code>docker compose restart</code></td>
+      </tr>
+      <tr>
+        <td><strong>Detener y levantar desde cero</strong></td>
+        <td><code>docker compose down && docker compose up -d</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-tip" style="margin-top: 20px;">
+    <div class="callout-title">Soporte y Contacto Técnico</div>
+    Para reportar anomalías, auditorías de seguridad o solicitudes de cambios en infraestructura, comuníquese con el equipo de soporte técnico institucional de BICSA S.A.
+  </div>
+
+</body>
+</html>
